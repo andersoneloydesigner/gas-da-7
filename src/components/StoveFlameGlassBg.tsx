@@ -206,6 +206,30 @@ export default function StoveFlameGlassBg() {
       const innerRx = drawW * 0.050;
       const innerRy = drawH * 0.029;
 
+      // Deepen the stove photo BEFORE drawing flames so background stays dark & high-contrast
+      // while the igniting blue flames stand out vividly on top
+      const photoDarken = ctx.createRadialGradient(
+        cx,
+        outerCy,
+        outerRx * 0.4,
+        cx,
+        outerCy,
+        Math.max(width, height) * 0.72
+      );
+      photoDarken.addColorStop(0, "rgba(4, 7, 15, 0.58)");
+      photoDarken.addColorStop(0.42, "rgba(4, 7, 15, 0.78)");
+      photoDarken.addColorStop(1, "rgba(3, 6, 13, 0.94)");
+      ctx.fillStyle = photoDarken;
+      ctx.fillRect(0, 0, width, height);
+
+      // Extra top darkening over the bright steel oven door behind the white header text
+      const topShade = ctx.createLinearGradient(0, 0, 0, height * 0.45);
+      topShade.addColorStop(0, "rgba(4, 7, 15, 0.76)");
+      topShade.addColorStop(0.65, "rgba(4, 7, 15, 0.35)");
+      topShade.addColorStop(1, "rgba(4, 7, 15, 0)");
+      ctx.fillStyle = topShade;
+      ctx.fillRect(0, 0, width, height * 0.45);
+
       // Ignition sequence envelope over the 7.4s loop:
       // 0.00 - 0.52s: Piezo spark flashes
       // 0.36 - 1.48s: Circular 360° blue flame ignition wave
@@ -417,21 +441,21 @@ export default function StoveFlameGlassBg() {
         className="absolute inset-0 w-full h-full block"
       />
 
-      {/* Layer 2: Light atmospheric edge vignette keeping center stove flames crisp & bright */}
+      {/* Layer 2: Subtle top/bottom edge vignette keeping center blue flames ultra-vivid */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(180deg, rgba(8,14,28,0.38) 0%, rgba(10,18,36,0.08) 48%, rgba(8,14,28,0.42) 100%)",
+            "linear-gradient(180deg, rgba(4,7,15,0.46) 0%, rgba(4,7,15,0.02) 48%, rgba(4,7,15,0.40) 100%)",
         }}
       />
 
-      {/* Layer 3: Frosted Glass Pane (7px blur with low tint so glowing blue stove flames stay vivid) */}
+      {/* Layer 3: Frosted Glass Pane (7px blur over deep dark background so glowing blue flames pop) */}
       <div
-        className="absolute inset-0 bg-[#0B1326]/8 backdrop-blur-[7px] backdrop-saturate-150 ring-1 ring-inset ring-white/15"
+        className="absolute inset-0 bg-[#050914]/12 backdrop-blur-[7px] backdrop-saturate-150 ring-1 ring-inset ring-white/12"
         style={{
           backgroundImage:
-            "linear-gradient(132deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.02) 34%, rgba(0,184,244,0.08) 68%, rgba(18,98,255,0.06) 100%)",
+            "linear-gradient(132deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.01) 36%, rgba(0,184,244,0.07) 70%, rgba(18,98,255,0.05) 100%)",
         }}
       />
 

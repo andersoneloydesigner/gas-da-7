@@ -49,11 +49,11 @@ export default function ServicesShowcase({ onSelectService }: ServicesShowcasePr
                 delay: (idx % 2) * 0.08,
                 ease: SMOOTH_EASE,
               }}
-              className="group rounded-2xl p-6 flex flex-col justify-between transition-all duration-200 bg-white/48 backdrop-blur-[10px] backdrop-saturate-150 text-[#0B0F1A] border border-white/55 hover:border-[#38D9FF] shadow-[0_18px_45px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.65)] text-left"
+              className="group rounded-2xl p-6 flex flex-col justify-between transition-all duration-200 bg-white/64 backdrop-blur-[12px] backdrop-saturate-150 text-[#0B0F1A] border border-white/60 hover:border-[#38D9FF] shadow-[0_20px_50px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,0.75)] text-left"
             >
               <div>
                 {/* Product-Only Studio Image */}
-                <div className="relative aspect-[4/3] shrink-0 overflow-hidden rounded-xl mb-5 border border-white/60 bg-white/70 backdrop-blur-sm">
+                <div className="relative aspect-[4/3] shrink-0 overflow-hidden rounded-xl mb-5 border border-white/70 bg-white/80 backdrop-blur-sm">
                   {service.image ? (
                     <img
                       src={service.image}
@@ -72,13 +72,13 @@ export default function ServicesShowcase({ onSelectService }: ServicesShowcasePr
                 {/* Product Info */}
                 <div className="space-y-3">
                   {service.badge && (
-                    <p className="inline-block px-2.5 py-0.5 rounded-lg bg-white/75 text-xs font-extrabold text-[#D94E08] tracking-wide">
+                    <p className="inline-block px-2.5 py-0.5 rounded-lg bg-white/85 text-xs font-extrabold text-[#C2410C] tracking-wide">
                       {service.badge}
                     </p>
                   )}
 
                   <div className="flex items-center gap-3">
-                    <span className="p-2.5 rounded-xl shrink-0 bg-white/75 text-[#F26513] border border-white/80">
+                    <span className="p-2.5 rounded-xl shrink-0 bg-white/85 text-[#F26513] border border-white/85">
                       <IconComponent className="w-5 h-5" />
                     </span>
                     <h3 className="font-extrabold text-lg md:text-xl tracking-tight leading-snug text-[#0B0F1A]">
@@ -86,14 +86,14 @@ export default function ServicesShowcase({ onSelectService }: ServicesShowcasePr
                     </h3>
                   </div>
 
-                  <p className="text-sm leading-relaxed text-[#121521]/90 font-medium">
+                  <p className="text-sm leading-relaxed text-[#0B0F1A]/90 font-medium">
                     {service.description}
                   </p>
                 </div>
 
                 {/* Interactive Selection: Com Casco vs Sem Casco */}
                 <div className="mt-5 space-y-2.5">
-                  <span className="block text-[11px] font-extrabold uppercase tracking-wider text-[#121521]/90">
+                  <span className="block text-[11px] font-extrabold uppercase tracking-wider text-[#0B0F1A]/90">
                     Selecione a opção desejada:
                   </span>
                   <div
@@ -108,14 +108,14 @@ export default function ServicesShowcase({ onSelectService }: ServicesShowcasePr
                       onClick={() => handleSelectMode(service.id, "com-casco")}
                       className={`rounded-xl p-3 text-left border-2 transition-all cursor-pointer ${
                         isRefillSelected
-                          ? "bg-[#121521]/85 backdrop-blur-sm text-white border-[#00B8F4]"
-                          : "bg-white/55 backdrop-blur-sm text-[#121521] border-white/65 hover:bg-white/75 hover:border-[#F26513]"
+                          ? "bg-[#0B101D]/90 backdrop-blur-sm text-white border-[#00B8F4]"
+                          : "bg-white/75 backdrop-blur-sm text-[#0B0F1A] border-white/75 hover:bg-white/90 hover:border-[#F26513]"
                       }`}
                     >
                       <div className="flex items-center justify-between gap-1.5">
                         <span
                           className={`text-[11px] font-extrabold uppercase tracking-wider ${
-                            isRefillSelected ? "text-[#00B8F4]" : "text-[#C84705]"
+                            isRefillSelected ? "text-[#00B8F4]" : "text-[#B53D03]"
                           }`}
                         >
                           Com Casco
@@ -132,7 +132,7 @@ export default function ServicesShowcase({ onSelectService }: ServicesShowcasePr
                       </div>
                       <span
                         className={`block text-[11px] font-medium mt-0.5 ${
-                          isRefillSelected ? "text-white/75" : "text-[#121521]/80"
+                          isRefillSelected ? "text-white/80" : "text-[#0B0F1A]/85"
                         }`}
                       >
                         Troca / Recarga
@@ -145,7 +145,7 @@ export default function ServicesShowcase({ onSelectService }: ServicesShowcasePr
                         {formatBRL(service.priceRefill)}{" "}
                         <span
                           className={`text-[11px] font-bold ${
-                            isRefillSelected ? "text-[#00B8F4]" : "text-[#C84705]"
+                            isRefillSelected ? "text-[#00B8F4]" : "text-[#B53D03]"
                           }`}
                         >
                           + frete
@@ -160,14 +160,14 @@ export default function ServicesShowcase({ onSelectService }: ServicesShowcasePr
                       onClick={() => handleSelectMode(service.id, "sem-casco")}
                       className={`rounded-xl p-3 text-left border-2 transition-all cursor-pointer ${
                         isWithoutShellSelected
-                          ? "bg-[#121521]/85 backdrop-blur-sm text-white border-[#00B8F4]"
-                          : "bg-white/55 backdrop-blur-sm text-[#121521] border-white/65 hover:bg-white/75 hover:border-[#F26513]"
+                          ? "bg-[#0B101D]/90 backdrop-blur-sm text-white border-[#00B8F4]"
+                          : "bg-white/75 backdrop-blur-sm text-[#0B0F1A] border-white/75 hover:bg-white/90 hover:border-[#F26513]"
                       }`}
                     >
                       <div className="flex items-center justify-between gap-1.5">
                         <span
                           className={`text-[11px] font-extrabold uppercase tracking-wider ${
-                            isWithoutShellSelected ? "text-[#00B8F4]" : "text-[#C84705]"
+                            isWithoutShellSelected ? "text-[#00B8F4]" : "text-[#B53D03]"
                           }`}
                         >
                           Sem Casco
@@ -176,7 +176,7 @@ export default function ServicesShowcase({ onSelectService }: ServicesShowcasePr
                           className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
                             isWithoutShellSelected
                               ? "bg-[#00B8F4] text-[#121521]"
-                              : "border border-[#33394D]/35 bg-white"
+                              : "border border-[#33394D]/45 bg-white"
                           }`}
                         >
                           {isWithoutShellSelected && <Check className="w-3 h-3 stroke-[3]" />}
@@ -184,7 +184,7 @@ export default function ServicesShowcase({ onSelectService }: ServicesShowcasePr
                       </div>
                       <span
                         className={`block text-[11px] font-medium mt-0.5 ${
-                          isWithoutShellSelected ? "text-white/75" : "text-[#121521]/80"
+                          isWithoutShellSelected ? "text-white/80" : "text-[#0B0F1A]/85"
                         }`}
                       >
                         Botijão Completo
@@ -197,7 +197,7 @@ export default function ServicesShowcase({ onSelectService }: ServicesShowcasePr
                         {formatBRL(service.priceWithoutShell)}{" "}
                         <span
                           className={`text-[11px] font-bold ${
-                            isWithoutShellSelected ? "text-[#00B8F4]" : "text-[#C84705]"
+                            isWithoutShellSelected ? "text-[#00B8F4]" : "text-[#B53D03]"
                           }`}
                         >
                           + frete
@@ -205,14 +205,14 @@ export default function ServicesShowcase({ onSelectService }: ServicesShowcasePr
                       </span>
                     </button>
                   </div>
-                  <p className="text-[11px] font-semibold text-[#121521]/85">
+                  <p className="text-[11px] font-semibold text-[#0B0F1A]/90">
                     * O valor do frete é informado pelo WhatsApp após o envio do pedido.
                   </p>
                 </div>
               </div>
 
               {/* Single Order Button */}
-              <div className="pt-5 mt-5 border-t border-white/45">
+              <div className="pt-5 mt-5 border-t border-white/50">
                 <button
                   type="button"
                   onClick={() =>

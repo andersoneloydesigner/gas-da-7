@@ -649,21 +649,21 @@ function HomeLanding() {
         </Section3DWrapper>
 
         {/* 4. Produtos & Serviços Section */}
-        <Section3DWrapper sectionId="servicos" sectionColor="#0B101D">
-        <section id="servicos" className="py-20 bg-[#0B101D] border-b border-[#1E293B] relative overflow-hidden">
+        <Section3DWrapper sectionId="servicos" sectionColor="#050811">
+        <section id="servicos" className="py-20 bg-[#050811] border-b border-[#162033] relative overflow-hidden">
           <StoveFlameGlassBg />
           <div className="max-w-7xl mx-auto px-6 space-y-12 relative z-10">
             <motion.div
               {...headerRevealProps}
               className="text-center max-w-2xl mx-auto space-y-3"
             >
-              <p className="text-xs uppercase tracking-widest text-[#38D9FF] font-extrabold text-center">
+              <p className="text-xs uppercase tracking-widest text-[#38D9FF] font-extrabold text-center drop-shadow-[0_1px_6px_rgba(0,0,0,0.75)]">
                 Disk Gás · Botijões & Tele-Entrega em Lages
               </p>
-              <h2 className="text-2xl md:text-4xl font-extrabold text-white tracking-tight text-center [text-wrap:balance]">
-                Soluções em Gás para Sua <span className="text-[#F26513]">Casa ou Empresa</span>
+              <h2 className="text-2xl md:text-4xl font-extrabold text-white tracking-tight text-center [text-wrap:balance] drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
+                Soluções em Gás para Sua <span className="text-[#FF7A2E]">Casa ou Empresa</span>
               </h2>
-              <p className="text-xs md:text-sm text-white/85 leading-relaxed font-medium text-center">
+              <p className="text-xs md:text-sm text-white/95 leading-relaxed font-medium text-center drop-shadow-[0_1px_8px_rgba(0,0,0,0.8)]">
                 Confira nossos produtos com entrega rápida em toda a cidade de Lages/SC: botijão P13 residencial e cilindro P45 comercial, com opção de recarga ou completo sem casco.
               </p>
             </motion.div>
@@ -676,7 +676,6 @@ function HomeLanding() {
         {/* 5. Diferenciais Section - Vibrant Orange Cards */}
         <Section3DWrapper sectionId="diferenciais" sectionColor="#FFFFFF">
         <section id="diferenciais" className="py-20 bg-white border-b border-[#FFE1CC] relative overflow-hidden">
-          <HeroGeoPattern variant="light" />
           <div className="max-w-7xl mx-auto px-6 relative z-10 space-y-12">
             <motion.div {...headerRevealProps} className="text-center max-w-3xl mx-auto space-y-3">
               <p className="text-xs uppercase tracking-widest text-[#F26513] font-extrabold">
