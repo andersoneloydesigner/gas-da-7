@@ -6,11 +6,13 @@
 import React, { useEffect, useState } from "react";
 import {
   APIProvider,
+  APILoadingStatus,
   Map as GoogleMap,
   AdvancedMarker,
   Pin,
   InfoWindow,
   useAdvancedMarkerRef,
+  useApiLoadingStatus,
   useMapsLibrary,
 } from "@vis.gl/react-google-maps";
 import { MapPin, ExternalLink, Loader2, Navigation } from "lucide-react";
@@ -22,6 +24,8 @@ interface ResolvedPlace {
   formattedAddress: string;
   googleMapsURI: string;
 }
+
+const MAPS_LIBRARIES: ("places" | "marker")[] = ["places", "marker"];
 
 const DEPOT_QUERIES = [
   "Gás da 7, Rua Sete de Setembro, 1749, Santa Helena, Lages - SC, Brasil",
@@ -47,12 +51,22 @@ function isQuotaError(error: unknown): boolean {
 }
 
 const DepotMapInner: React.FC = () => {
+  const apiStatus = useApiLoadingStatus();
   const placesLib = useMapsLibrary("places");
   const [markerRef, marker] = useAdvancedMarkerRef();
 
   const [placeData, setPlaceData] = useState<ResolvedPlace | null>(null);
   const [infoOpen, setInfoOpen] = useState(true);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+
+  useEffect(() => {
+    if (
+      apiStatus === APILoadingStatus.FAILED ||
+      apiStatus === APILoadingStatus.AUTH_FAILURE
+    ) {
+      setStatus("error");
+    }
+  }, [apiStatus]);
 
   useEffect(() => {
     if (!placesLib) return;
@@ -219,7 +233,7 @@ const DepotMapInner: React.FC = () => {
   );
 };
 
-const LocationMap: React.FC = () => {
+const LocationMap: React.FC = React.memo(() => {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
   if (!apiKey) {
@@ -257,12 +271,14 @@ const LocationMap: React.FC = () => {
         apiKey={apiKey}
         language="pt-BR"
         region="BR"
-        libraries={["places", "marker"]}
+        libraries={MAPS_LIBRARIES}
       >
         <DepotMapInner />
       </APIProvider>
     </div>
   );
-};
+});
+
+LocationMap.displayName = "LocationMap";
 
 export default LocationMap;

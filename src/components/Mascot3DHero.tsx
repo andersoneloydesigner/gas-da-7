@@ -325,21 +325,23 @@ export default function Mascot3DHero() {
     pmremGenerator.dispose();
 
     const getCameraLayout = (aspect: number) => {
-      const camX = aspect >= 0.85 ? 0.38 : 0.14;
-      const frontH = 3.55; // tightened for +50% mascot scale while preserving hop & outline margin
+      const isMobilePortrait = aspect < 0.85;
+      const camX = isMobilePortrait ? 0.22 : 0.38;
+      const camY = isMobilePortrait ? 0.36 : 0.21;
+      const frontH = isMobilePortrait ? 3.85 : 3.55; // breathing room at top on mobile for "OH O GÁS!"
       const frontLeftMargin = 1.32; // cylinder silhouette + tilt + white outline
       const tanHalfV = Math.tan(THREE.MathUtils.degToRad(34) / 2);
       const distH = 0.55 + (frontH / 2) / tanHalfV;
       const distW = 0.25 + (camX + frontLeftMargin) / (tanHalfV * Math.max(0.55, aspect));
       const camZ = Math.max(distH, distW);
-      return { camX, camZ };
+      return { camX, camY, camZ };
     };
 
     const initialAspect = width / height;
     const initialCam = getCameraLayout(initialAspect);
     const camera = new THREE.PerspectiveCamera(34, initialAspect, 0.1, 50);
-    camera.position.set(initialCam.camX, 0.21, initialCam.camZ);
-    camera.lookAt(initialCam.camX, 0.21, 0);
+    camera.position.set(initialCam.camX, initialCam.camY, initialCam.camZ);
+    camera.lookAt(initialCam.camX, initialCam.camY, 0);
 
     const updateShadowPos = (camX: number, camZ: number, aspect: number) => {
       if (!shadowRef.current) return;
@@ -850,6 +852,7 @@ export default function Mascot3DHero() {
     }
 
     let currentBaseCamX = initialCam.camX;
+    let currentBaseCamY = initialCam.camY;
     let currentBaseCamZ = initialCam.camZ;
     let stageWidth = initialStageW;
     let stageHeight = initialStageH;
@@ -874,10 +877,11 @@ export default function Mascot3DHero() {
       const aspect = w / h;
       const cam = getCameraLayout(aspect);
       currentBaseCamX = cam.camX;
+      currentBaseCamY = cam.camY;
       currentBaseCamZ = cam.camZ;
       camera.aspect = aspect;
-      camera.position.set(cam.camX, 0.21, cam.camZ);
-      camera.lookAt(cam.camX, 0.21, 0);
+      camera.position.set(cam.camX, cam.camY, cam.camZ);
+      camera.lookAt(cam.camX, cam.camY, 0);
       camera.updateProjectionMatrix();
       updateShadowPos(cam.camX, cam.camZ, aspect);
 
@@ -896,7 +900,8 @@ export default function Mascot3DHero() {
     const startTime = lastTime;
     let locationMode: "hero" | "servicos" = "hero";
     let popProgress = 1; // 0 -> 1 elastic cartoon pop-in out of smoke puff
-    let servicosSpin = 0;
+    let servicosSpinProgress = 1; // 0 -> 1 single 360° arrival spin in #servicos
+    let servicosHopCooldown = 2.2; // seconds until next occasional hop in #servicos
     let hasTriggeredInitialMode = false;
 
     const easeOutBack = (t: number) => {
@@ -943,7 +948,8 @@ export default function Mascot3DHero() {
           if (servSectionRect.top < vh * 0.72) {
             locationMode = "servicos";
             popProgress = prefersReducedMotion ? 1 : 0;
-            servicosSpin = 0;
+            servicosSpinProgress = prefersReducedMotion ? 1 : 0;
+            servicosHopCooldown = 2.2;
             window.dispatchEvent(
               new CustomEvent("gas7-mascot-teleport", { detail: { target: "servicos" } })
             );
@@ -951,14 +957,15 @@ export default function Mascot3DHero() {
         } else if (locationMode === "hero" && servSectionRect.top < vh * 0.72) {
           locationMode = "servicos";
           popProgress = prefersReducedMotion ? 1 : 0;
-          servicosSpin = 0;
+          servicosSpinProgress = prefersReducedMotion ? 1 : 0;
+          servicosHopCooldown = 2.2;
           window.dispatchEvent(
             new CustomEvent("gas7-mascot-teleport", { detail: { target: "servicos" } })
           );
         } else if (locationMode === "servicos" && servSectionRect.top > vh * 0.85) {
           locationMode = "hero";
           popProgress = prefersReducedMotion ? 1 : 0;
-          servicosSpin = 0;
+          servicosSpinProgress = 1;
           if (heroRect.bottom > 40) {
             window.dispatchEvent(
               new CustomEvent("gas7-mascot-teleport", { detail: { target: "hero" } })
@@ -1017,8 +1024,9 @@ export default function Mascot3DHero() {
 
       // Center camera horizontally when docked in #servicos; keep Hero offset in #inicio
       const activeCamX = isInServicos ? 0 : currentBaseCamX;
-      camera.position.set(activeCamX, 0.21, currentBaseCamZ);
-      camera.lookAt(activeCamX, 0.21, 0);
+      const activeCamY = isInServicos ? 0.21 : currentBaseCamY;
+      camera.position.set(activeCamX, activeCamY, currentBaseCamZ);
+      camera.lookAt(activeCamX, activeCamY, 0);
 
       // Hide strictly when active anchor is scrolled out of viewport so it never covers other content
       const introFade = Math.min(1, elapsed / 0.35);
@@ -1054,22 +1062,42 @@ export default function Mascot3DHero() {
         const idleBlend = spinT >= 1 ? 1 : Math.pow(spinT, 2);
 
         if (isInServicos) {
-          // Fast celebratory pop-in spin blending into continuous playful 360° spin
-          const popBurstSpin = (1 - Math.pow(1 - popProgress, 3)) * Math.PI * 2;
-          servicosSpin += dt * 1.55;
+          // Single 360° arrival spin (~0.95s), then settle facing forward with lively repetitive motion
+          if (servicosSpinProgress < 1) {
+            servicosSpinProgress = Math.min(1, servicosSpinProgress + dt / 0.95);
+          }
+          const singleArrivalSpin =
+            (1 - Math.pow(1 - servicosSpinProgress, 3)) * Math.PI * 2;
+          const settledBlend =
+            servicosSpinProgress >= 1 ? 1 : Math.pow(servicosSpinProgress, 2);
 
-          const dockedBob = Math.sin(elapsed * 3.15) * 0.115;
-          const dockedFloatX = Math.sin(elapsed * 2.0) * 0.095;
-          const dockedSway = Math.sin(elapsed * 2.0) * 0.09;
+          // Occasional playful hop when settled and visible in #servicos
+          if (!isOffscreen && servicosSpinProgress >= 1) {
+            servicosHopCooldown -= dt;
+            if (
+              servicosHopCooldown <= 0 &&
+              jumpHeightRef.current === 0 &&
+              jumpVelocityRef.current === 0
+            ) {
+              jumpVelocityRef.current = 2.55;
+              servicosHopCooldown = 2.8 + Math.random() * 1.4;
+            }
+          }
+
+          const dockedBob = Math.sin(elapsed * 2.85) * 0.085;
+          const dockedFloatX = Math.sin(elapsed * 1.85) * 0.065;
+          const dockedSway = Math.sin(elapsed * 1.85) * 0.075;
+          const dockedYaw = Math.sin(elapsed * 1.45) * 0.14 * settledBlend;
 
           mascotRoot.position.x = dockedFloatX;
           mascotRoot.position.y = dockedBob + jumpHeightRef.current;
 
-          const stretch = 1 + jumpVelocityRef.current * 0.012 + Math.cos(elapsed * 3.15) * 0.022;
-          const squash = 1 / Math.sqrt(Math.max(0.88, stretch));
+          const stretch =
+            1 + jumpVelocityRef.current * 0.015 + Math.cos(elapsed * 2.85) * 0.018;
+          const squash = 1 / Math.sqrt(Math.max(0.86, stretch));
           mascotRoot.scale.set(squash, stretch, squash);
 
-          mascotRoot.rotation.y = popBurstSpin + servicosSpin;
+          mascotRoot.rotation.y = singleArrivalSpin + dockedYaw;
           mascotBody.rotation.z = 0.075 + dockedSway;
         } else {
           const idleBob = Math.sin(elapsed * 2.5) * 0.038 * idleBlend;
@@ -1133,7 +1161,7 @@ export default function Mascot3DHero() {
       className="fixed top-0 left-0 z-30 pointer-events-none select-none will-change-transform origin-center"
       style={{ opacity: 0 }}
     >
-      <div ref={mountRef} className="relative w-full h-full">
+      <div ref={mountRef} className="relative z-10 w-full h-full">
         {webglFailed && (
           <img
             src={IMAGES.mascotRef}
@@ -1149,14 +1177,59 @@ export default function Mascot3DHero() {
         type="button"
         onClick={triggerCheerHop}
         aria-label="Interagir com o Mascote 3D Gás da 7"
-        className="absolute left-[26%] top-[12%] w-[48%] h-[76%] pointer-events-auto cursor-pointer bg-transparent border-0 focus-visible:outline-none"
+        className="absolute left-[26%] top-[12%] w-[48%] h-[76%] z-10 pointer-events-auto cursor-pointer bg-transparent border-0 focus-visible:outline-none"
       />
+
+      {/* Animated "OH O GÁS!" Comic Callout rendered ABOVE the 3D mascot canvas so it sits close and overlaps cleanly in front */}
+      <button
+        ref={calloutRef}
+        type="button"
+        onClick={triggerCheerHop}
+        aria-label="Oh o Gás!"
+        className="animate-oh-gas absolute right-[6%] sm:right-[8%] md:right-[5%] top-[13%] sm:top-[17%] md:top-[18%] z-20 flex flex-col items-center pointer-events-auto cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F26513] rounded-xl p-1 transition-opacity duration-200"
+      >
+        <div className="flex flex-col items-center leading-[0.88] font-black tracking-tight uppercase text-center">
+          <span
+            className="-ml-[22px] -mb-[8px] sm:-ml-[44px] sm:-mb-[14px] md:-ml-[56px] md:-mb-[18px] text-[1.85rem] sm:text-[2.75rem] md:text-[3.25rem] text-[#F26513] transition-transform duration-150 group-hover:scale-105"
+            style={{
+              textShadow:
+                "3px 3px 0px #070910, -1.5px -1.5px 0px #ffffff, 1.5px -1.5px 0px #ffffff, -1.5px 1.5px 0px #ffffff, 1.5px 1.5px 0px #ffffff",
+            }}
+          >
+            OH
+          </span>
+          <span
+            className="ml-0 mt-[12px] sm:mt-[20px] md:mt-[25px] text-[1.85rem] sm:text-[2.75rem] md:text-[3.25rem] text-[#F26513] transition-transform duration-150 group-hover:scale-105"
+            style={{
+              textShadow:
+                "3px 3px 0px #070910, -1.5px -1.5px 0px #ffffff, 1.5px -1.5px 0px #ffffff, -1.5px 1.5px 0px #ffffff, 1.5px 1.5px 0px #ffffff",
+            }}
+          >
+            O GÁS!
+          </span>
+        </div>
+
+        {/* Curved Speech Pointer Tail Matching Illustration (White on Dark Blue) */}
+        <svg
+          viewBox="0 0 80 42"
+          fill="none"
+          aria-hidden="true"
+          className="w-11 sm:w-16 h-6 sm:h-9 -ml-12 sm:-ml-16 -mt-0.5 text-white"
+        >
+          <path
+            d="M66 5C56 26 32 34 8 33"
+            stroke="currentColor"
+            strokeWidth="5"
+            strokeLinecap="round"
+          />
+        </svg>
+      </button>
     </div>
   );
 
   return (
     <div className="relative w-full flex items-center justify-center select-none">
-      {/* Hero Stage Anchor (+50% larger mascot stage, holds shadow, smoke puff & OH O GÁS callout) */}
+      {/* Hero Stage Anchor (+50% larger mascot stage, holds shadow & smoke puff) */}
       <div
         ref={heroStageRef}
         className="relative w-full max-w-[820px] h-[510px] sm:h-[640px] md:h-[750px] md:-my-16 flex items-center justify-center"
@@ -1170,51 +1243,6 @@ export default function Mascot3DHero() {
           aria-hidden="true"
           className="absolute bottom-4 -translate-x-1/2 w-[52%] h-8 rounded-full bg-black/45 blur-md pointer-events-none z-20 transition-opacity duration-150"
         />
-
-        {/* Animated "OH O GÁS!" Comic Callout Right Beside the 3D Mascot */}
-        <button
-          ref={calloutRef}
-          type="button"
-          onClick={triggerCheerHop}
-          aria-label="Oh o Gás!"
-          className="animate-oh-gas absolute right-0 sm:right-2 md:-right-2 top-[15%] sm:top-[17%] z-40 flex flex-col items-center cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F26513] rounded-xl p-1 transition-opacity duration-200"
-        >
-          <div className="flex flex-col items-center leading-[0.88] font-black tracking-tight uppercase text-center">
-            <span
-              className="-ml-[28px] -mb-[10px] sm:-ml-[44px] sm:-mb-[14px] md:-ml-[56px] md:-mb-[18px] text-[1.95rem] sm:text-[2.75rem] md:text-[3.25rem] text-[#F26513] transition-transform duration-150 group-hover:scale-105"
-              style={{
-                textShadow:
-                  "3px 3px 0px #070910, -1.5px -1.5px 0px #ffffff, 1.5px -1.5px 0px #ffffff, -1.5px 1.5px 0px #ffffff, 1.5px 1.5px 0px #ffffff",
-              }}
-            >
-              OH
-            </span>
-            <span
-              className="ml-0 mt-[14px] sm:mt-[20px] md:mt-[25px] text-[1.95rem] sm:text-[2.75rem] md:text-[3.25rem] text-[#F26513] transition-transform duration-150 group-hover:scale-105"
-              style={{
-                textShadow:
-                  "3px 3px 0px #070910, -1.5px -1.5px 0px #ffffff, 1.5px -1.5px 0px #ffffff, -1.5px 1.5px 0px #ffffff, 1.5px 1.5px 0px #ffffff",
-              }}
-            >
-              O GÁS!
-            </span>
-          </div>
-
-          {/* Curved Speech Pointer Tail Matching Illustration (White on Dark Blue) */}
-          <svg
-            viewBox="0 0 80 42"
-            fill="none"
-            aria-hidden="true"
-            className="w-12 sm:w-16 h-7 sm:h-9 -ml-10 sm:-ml-14 mt-1 text-white"
-          >
-            <path
-              d="M66 5C56 26 32 34 8 33"
-              stroke="currentColor"
-              strokeWidth="5"
-              strokeLinecap="round"
-            />
-          </svg>
-        </button>
       </div>
 
       {/* Single 3D Mascot Portal able to descend smoothly from Hero (#inicio) to #servicos */}
