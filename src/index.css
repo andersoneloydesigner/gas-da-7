@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-orange: #F26513;
+  --color-brand-orange-hover: #d95308;
+  --color-brand-navy: #121521;
+  --color-brand-cyan: #00B8F4;
+  --color-brand-cyan-dark: #0095D1;
+  --color-brand-light-orange: #FFF5EE;
+  --color-brand-text-dark: #33394D;
+  --color-brand-border: #FFE1CC;
+  --color-brand-bg: #FFF9F5;
+}
+
+html {
+  scroll-behavior: auto;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #ffffff;
+  color: var(--color-brand-navy);
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes ohGasFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(-3deg) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) rotate(-1deg) scale(1.03);
+  }
+}
+
+.animate-oh-gas {
+  animation: ohGasFloat 2.8s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-oh-gas {
+    animation: none;
+  }
+}

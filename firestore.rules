@@ -1,0 +1,168 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: Default-deny all unmatched paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Primitive Helpers ---
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isBootstrappedAdmin() {
+      return isVerifiedUser() && request.auth.token.email == 'andeloy@gmail.com';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (
+        isVerifiedUser() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // --- Validation Blueprints ---
+    function isValidOrderStatus(status) {
+      return status is string && status in ['novo', 'em_rota', 'entregue', 'cancelado'];
+    }
+
+    function isValidOrderFields(data) {
+      return data.keys().hasAll([
+        'orderNumber',
+        'orderDate',
+        'clientName',
+        'clientPhone',
+        'neighborhood',
+        'city',
+        'address',
+        'isOtherCity',
+        'productType',
+        'quantity',
+        'paymentMethod',
+        'notes',
+        'status',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'orderNumber',
+        'orderDate',
+        'clientName',
+        'clientPhone',
+        'neighborhood',
+        'city',
+        'address',
+        'isOtherCity',
+        'productType',
+        'quantity',
+        'paymentMethod',
+        'notes',
+        'status',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.orderNumber is string && data.orderNumber.size() >= 5 && data.orderNumber.size() <= 32 && data.orderNumber.matches('^#G7-[0-9]{4}-[0-9]{4}$') &&
+      data.orderDate is string && data.orderDate.size() == 10 && data.orderDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+      data.clientName is string && data.clientName.size() >= 2 && data.clientName.size() <= 120 &&
+      data.clientPhone is string && data.clientPhone.size() >= 8 && data.clientPhone.size() <= 25 &&
+      data.neighborhood is string && data.neighborhood.size() >= 2 && data.neighborhood.size() <= 100 &&
+      data.city is string && data.city.size() >= 2 && data.city.size() <= 100 &&
+      data.address is string && data.address.size() >= 4 && data.address.size() <= 280 &&
+      data.isOtherCity is bool &&
+      data.productType is string && data.productType.size() >= 2 && data.productType.size() <= 100 &&
+      data.quantity is int && data.quantity >= 1 && data.quantity <= 20 &&
+      data.paymentMethod is string && data.paymentMethod.size() >= 2 && data.paymentMethod.size() <= 60 &&
+      data.notes is string && data.notes.size() <= 500 &&
+      isValidOrderStatus(data.status) &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidOrderCreate(data) {
+      return isValidOrderFields(data) &&
+        data.status == 'novo' &&
+        data.createdAt == request.time &&
+        data.updatedAt == request.time;
+    }
+
+    function hasImmutableOrderFields() {
+      return incoming().orderNumber == existing().orderNumber &&
+        incoming().orderDate == existing().orderDate &&
+        incoming().clientName == existing().clientName &&
+        incoming().clientPhone == existing().clientPhone &&
+        incoming().neighborhood == existing().neighborhood &&
+        incoming().city == existing().city &&
+        incoming().address == existing().address &&
+        incoming().isOtherCity == existing().isOtherCity &&
+        incoming().productType == existing().productType &&
+        incoming().quantity == existing().quantity &&
+        incoming().paymentMethod == existing().paymentMethod &&
+        incoming().notes == existing().notes &&
+        incoming().createdAt == existing().createdAt;
+    }
+
+    function isValidAdminUser(data, adminId) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'addedBy', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'name', 'email', 'addedBy', 'createdAt']) &&
+        data.uid is string && data.uid.size() >= 6 && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.uid == adminId &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 120 &&
+        data.email is string && data.email.size() >= 5 && data.email.size() <= 160 &&
+        data.addedBy is string && data.addedBy.size() >= 6 && data.addedBy.size() <= 128 && data.addedBy.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.addedBy == request.auth.uid &&
+        data.createdAt is timestamp &&
+        data.createdAt == request.time;
+    }
+
+    // --- Collection: /orders/{orderId} ---
+    // Evaluation order: Auth -> Static Validation -> Relational Check (Denial-of-Wallet guard).
+    // Contains customer PII: reads, updates, and deletes are strictly restricted to verified admins.
+    // Public creation is strictly schema-validated for website customers submitting gas orders.
+    match /orders/{orderId} {
+      allow get: if isVerifiedUser() && isValidId(orderId) && isAdmin();
+      allow list: if isVerifiedUser() && isAdmin();
+      allow create: if isValidId(orderId) && isValidOrderCreate(incoming());
+      allow update: if isVerifiedUser() &&
+        isValidId(orderId) &&
+        isValidOrderFields(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) &&
+        hasImmutableOrderFields() &&
+        incoming().updatedAt == request.time &&
+        ((!(existing().status in ['entregue', 'cancelado']) && isAdmin()) || isAdmin());
+      allow delete: if isVerifiedUser() && isValidId(orderId) && isAdmin();
+    }
+
+    // --- Collection: /admins/{adminId} ---
+    // RBAC directory of authorized company owners. Self-assignment is strictly forbidden.
+    match /admins/{adminId} {
+      allow get: if isVerifiedUser() && isValidId(adminId) && (
+        request.auth.uid == adminId || isAdmin()
+      );
+      allow list: if isVerifiedUser() && isAdmin();
+      allow create: if isVerifiedUser() &&
+        isValidId(adminId) &&
+        isValidAdminUser(incoming(), adminId) &&
+        isAdmin();
+      allow update: if false;
+      allow delete: if isVerifiedUser() && isValidId(adminId) && isAdmin();
+    }
+  }
+}
