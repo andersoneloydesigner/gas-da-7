@@ -7,10 +7,10 @@
       "properties": {
         "orderNumber": {
           "type": "string",
-          "description": "Código único do pedido gerado no envio",
-          "minLength": 5,
+          "description": "Código único do pedido no formato #G7-HHMM-DDMMNNN (data + sequencial diário)",
+          "minLength": 15,
           "maxLength": 32,
-          "pattern": "^#G7-[0-9]{4}-[0-9]{4}$"
+          "pattern": "^#G7-[0-9]{4}-[0-9]{7,8}$"
         },
         "orderDate": {
           "type": "string",
@@ -109,6 +109,30 @@
         "updatedAt"
       ]
     },
+    "DailyCounter": {
+      "title": "Contador Diário de Pedidos",
+      "description": "Contador sequencial atômico por data (YYYY-MM-DD em Lages/SC) que reinicia automaticamente em 001 às 00:00 de cada dia.",
+      "type": "object",
+      "properties": {
+        "orderDate": {
+          "type": "string",
+          "description": "Data do contador no formato YYYY-MM-DD",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "count": {
+          "type": "number",
+          "description": "Último número sequencial gerado no dia (1 a 9999)"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp do servidor na última incrementação"
+        }
+      },
+      "required": ["orderDate", "count", "updatedAt"]
+    },
     "AdminUser": {
       "title": "Administrador Autorizado",
       "description": "Donos e gestores autorizados da Gás da 7 com permissão de acesso ao painel /adm.",
@@ -153,7 +177,11 @@
   "firestore": {
     "/orders/{orderId}": {
       "schema": { "$ref": "#/entities/Order" },
-      "description": "Pedidos diários de gás da Gás da 7 (criação pública validada; leitura, gestão e limpeza restritas aos administradores)."
+      "description": "Pedidos diários de gás da Gás da 7 (criação pública validada com contador atômico; leitura, gestão e limpeza restritas aos administradores)."
+    },
+    "/dailyCounters/{dateKey}": {
+      "schema": { "$ref": "#/entities/DailyCounter" },
+      "description": "Contador sequencial diário sem PII para numeração automática #G7-HHMM-DDMMNNN."
     },
     "/admins/{adminId}": {
       "schema": { "$ref": "#/entities/AdminUser" },

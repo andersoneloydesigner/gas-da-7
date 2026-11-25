@@ -262,13 +262,21 @@ export default function AdminPage({ onNavigate }: AdminPageProps) {
       }
     );
 
-    // Clean up any leftover orders from previous days (enforcing daily 00:00 reset in DB too)
+    // Clean up any leftover orders and counters from previous days (enforcing daily 00:00 reset in DB too)
     const cleanupPreviousDays = async () => {
       try {
         const oldQuery = query(ordersRef, where("orderDate", "<", todayDateKey));
         const oldSnap = await getDocs(oldQuery);
         if (!oldSnap.empty) {
           await Promise.all(oldSnap.docs.map((oldDoc) => deleteDoc(oldDoc.ref)));
+        }
+        const oldCountersQuery = query(
+          collection(db, "dailyCounters"),
+          where("orderDate", "<", todayDateKey)
+        );
+        const oldCountersSnap = await getDocs(oldCountersQuery);
+        if (!oldCountersSnap.empty) {
+          await Promise.all(oldCountersSnap.docs.map((cDoc) => deleteDoc(cDoc.ref)));
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);

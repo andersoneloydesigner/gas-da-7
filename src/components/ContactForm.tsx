@@ -21,9 +21,9 @@ import { APP_DETAILS, NEIGHBORHOODS_LAGES } from "../constants";
 import {
   PRODUCT_OPTIONS,
   PAYMENT_OPTIONS,
-  generateOrderNumber,
+  formatDailyOrderNumber,
   getLagesDateKey,
-  saveOrderToFirestore,
+  createSequentialOrderInFirestore,
 } from "../utils/orders";
 
 const SMOOTH_EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
@@ -166,7 +166,6 @@ export default function ContactForm({ selectedProduct, selectionNonce }: Contact
     setAddressError("");
     setIsSaving(true);
 
-    const newOrderCode = generateOrderNumber();
     const orderDate = getLagesDateKey();
 
     const formattedAddress = isOtherCity
@@ -174,6 +173,36 @@ export default function ContactForm({ selectedProduct, selectionNonce }: Contact
       : `${street.trim()}, nº ${houseNumber.trim()}${
           complement.trim() ? ` (${complement.trim()})` : ""
         } - Bairro ${selectedNeighborhood}, Lages - SC`;
+
+    let newOrderCode = formatDailyOrderNumber(orderDate, 1);
+
+    try {
+      const saved = await createSequentialOrderInFirestore({
+        orderDate,
+        clientName: clientName.trim(),
+        clientPhone: clientPhone.trim(),
+        neighborhood: isOtherCity ? "Outro Município" : selectedNeighborhood,
+        city: isOtherCity ? otherCity.trim() : "Lages - SC",
+        address: formattedAddress,
+        isOtherCity,
+        productType,
+        quantity,
+        paymentMethod,
+        notes: notes.trim(),
+      });
+      newOrderCode = saved.orderNumber;
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      if (errMsg.includes("Quota exceeded")) {
+        setIsSaving(false);
+        setSubmitError(
+          "Limite diário do sistema atingido no momento. Você ainda pode pedir diretamente pelo botão de WhatsApp."
+        );
+        return;
+      }
+      // Continue to WhatsApp so customer is never blocked from ordering gas even if offline
+      console.error("Order save fallback notice:", errMsg);
+    }
 
     const lines = [
       "Olá Gás da 7! Acabei de realizar um pedido pelo site:",
@@ -192,34 +221,6 @@ export default function ContactForm({ selectedProduct, selectionNonce }: Contact
     const url = `https://api.whatsapp.com/send?phone=${APP_DETAILS.phoneWhatsappRaw}&text=${encodeURIComponent(
       message
     )}`;
-
-    try {
-      await saveOrderToFirestore({
-        orderNumber: newOrderCode,
-        orderDate,
-        clientName: clientName.trim(),
-        clientPhone: clientPhone.trim(),
-        neighborhood: isOtherCity ? "Outro Município" : selectedNeighborhood,
-        city: isOtherCity ? otherCity.trim() : "Lages - SC",
-        address: formattedAddress,
-        isOtherCity,
-        productType,
-        quantity,
-        paymentMethod,
-        notes: notes.trim(),
-      });
-    } catch (err) {
-      const errMsg = err instanceof Error ? err.message : String(err);
-      if (errMsg.includes("Quota exceeded")) {
-        setIsSaving(false);
-        setSubmitError(
-          "Limite diário do sistema atingido no momento. Você ainda pode pedir diretamente pelo botão de WhatsApp."
-        );
-        return;
-      }
-      // Continue to WhatsApp so customer is never blocked from ordering gas even if offline
-      console.error("Order save fallback notice:", errMsg);
-    }
 
     setIsSaving(false);
     setOrderNumber(newOrderCode);

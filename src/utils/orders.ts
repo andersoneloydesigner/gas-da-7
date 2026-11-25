@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { doc, setDoc, serverTimestamp, Timestamp } from "firebase/firestore";
+import { doc, runTransaction, serverTimestamp, Timestamp } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType } from "../firebase";
 
 export const PRODUCT_OPTIONS = [
@@ -52,7 +52,6 @@ export interface OrderRecord {
 }
 
 export interface CreateOrderInput {
-  orderNumber: string;
   orderDate: string;
   clientName: string;
   clientPhone: string;
@@ -121,8 +120,15 @@ export function getMsUntilLagesMidnight(): number {
   return remainingSec * 1000 + 500;
 }
 
-export function generateOrderNumber(): string {
-  const now = new Date();
+/**
+ * Formats order code as #G7-HHMM-DDMMNNN (e.g. #G7-1355-2511001).
+ * The ending combines DDMM (day+month in Lages/SC) + 3-digit daily sequential order number.
+ */
+export function formatDailyOrderNumber(
+  orderDate: string,
+  seqNumber: number,
+  now: Date = new Date()
+): string {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Sao_Paulo",
     hour: "2-digit",
@@ -134,8 +140,13 @@ export function generateOrderNumber(): string {
   const minNum = Number(parts.find((p) => p.type === "minute")?.value || "0") % 60;
   const hh = String(hourNum).padStart(2, "0");
   const mm = String(minNum).padStart(2, "0");
-  const rand = String(Math.floor(1000 + Math.random() * 9000));
-  return `#G7-${hh}${mm}-${rand}`;
+
+  const [, month = "01", day = "01"] = orderDate.split("-");
+  const ddmm = `${day.padStart(2, "0").slice(0, 2)}${month.padStart(2, "0").slice(0, 2)}`;
+  const safeSeq = Math.max(1, Math.min(9999, Math.floor(seqNumber)));
+  const seqStr = String(safeSeq).padStart(3, "0");
+
+  return `#G7-${hh}${mm}-${ddmm}${seqStr}`;
 }
 
 function createSafeOrderDocId(orderDate: string, orderNumber: string): string {
@@ -150,36 +161,64 @@ function clampString(val: string, maxLen: number): string {
 }
 
 /**
- * Persists a customer order into Firestore adhering strictly to firebase-blueprint.json schema.
+ * Atomically increments /dailyCounters/{orderDate} and persists the order in /orders/{docId}
+ * inside a single Firestore transaction so every customer receives a unique sequential number
+ * (#G7-HHMM-DDMM001, #G7-HHMM-DDMM002...) that resets daily at 00:00 Lages/SC time.
  */
-export async function saveOrderToFirestore(input: CreateOrderInput): Promise<string> {
-  const docId = createSafeOrderDocId(input.orderDate, input.orderNumber);
-  const docPath = `orders/${docId}`;
-
+export async function createSequentialOrderInFirestore(
+  input: CreateOrderInput
+): Promise<{ docId: string; orderNumber: string }> {
+  const safeOrderDate = clampString(input.orderDate, 10);
   const safeQuantity = Math.max(1, Math.min(20, Math.round(Number(input.quantity) || 1)));
-
-  const payload = {
-    orderNumber: clampString(input.orderNumber, 32),
-    orderDate: clampString(input.orderDate, 10),
-    clientName: clampString(input.clientName, 120),
-    clientPhone: clampString(input.clientPhone, 25),
-    neighborhood: clampString(input.neighborhood, 100),
-    city: clampString(input.city, 100),
-    address: clampString(input.address, 280),
-    isOtherCity: Boolean(input.isOtherCity),
-    productType: clampString(input.productType, 100),
-    quantity: safeQuantity,
-    paymentMethod: clampString(input.paymentMethod, 60),
-    notes: clampString(input.notes, 500),
-    status: "novo" as const,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  };
+  const counterRef = doc(db, "dailyCounters", safeOrderDate);
 
   try {
-    await setDoc(doc(db, "orders", docId), payload);
-    return docId;
+    const result = await runTransaction(db, async (transaction) => {
+      const counterSnap = await transaction.get(counterRef);
+      const nextSeq = counterSnap.exists()
+        ? Math.min(9999, Number(counterSnap.data().count || 0) + 1)
+        : 1;
+
+      const orderNumber = formatDailyOrderNumber(safeOrderDate, nextSeq);
+      const docId = createSafeOrderDocId(safeOrderDate, orderNumber);
+      const orderRef = doc(db, "orders", docId);
+
+      if (counterSnap.exists()) {
+        transaction.update(counterRef, {
+          count: nextSeq,
+          updatedAt: serverTimestamp(),
+        });
+      } else {
+        transaction.set(counterRef, {
+          orderDate: safeOrderDate,
+          count: 1,
+          updatedAt: serverTimestamp(),
+        });
+      }
+
+      transaction.set(orderRef, {
+        orderNumber: clampString(orderNumber, 32),
+        orderDate: safeOrderDate,
+        clientName: clampString(input.clientName, 120),
+        clientPhone: clampString(input.clientPhone, 25),
+        neighborhood: clampString(input.neighborhood, 100),
+        city: clampString(input.city, 100),
+        address: clampString(input.address, 280),
+        isOtherCity: Boolean(input.isOtherCity),
+        productType: clampString(input.productType, 100),
+        quantity: safeQuantity,
+        paymentMethod: clampString(input.paymentMethod, 60),
+        notes: clampString(input.notes, 500),
+        status: "novo" as const,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      return { docId, orderNumber };
+    });
+
+    return result;
   } catch (error) {
-    handleFirestoreError(error, OperationType.CREATE, docPath);
+    handleFirestoreError(error, OperationType.WRITE, `orders (dailyCounters/${safeOrderDate})`);
   }
 }

@@ -12,6 +12,10 @@ service cloud.firestore {
       return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
+    function isValidDateKey(dateKey) {
+      return isValidId(dateKey) && dateKey.size() == 10 && dateKey.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+
     function incoming() {
       return request.resource.data;
     }
@@ -79,7 +83,7 @@ service cloud.firestore {
         'createdAt',
         'updatedAt'
       ]) &&
-      data.orderNumber is string && data.orderNumber.size() >= 5 && data.orderNumber.size() <= 32 && data.orderNumber.matches('^#G7-[0-9]{4}-[0-9]{4}$') &&
+      data.orderNumber is string && data.orderNumber.size() >= 15 && data.orderNumber.size() <= 32 && data.orderNumber.matches('^#G7-[0-9]{4}-[0-9]{7,8}$') &&
       data.orderDate is string && data.orderDate.size() == 10 && data.orderDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
       data.clientName is string && data.clientName.size() >= 2 && data.clientName.size() <= 120 &&
       data.clientPhone is string && data.clientPhone.size() >= 8 && data.clientPhone.size() <= 25 &&
@@ -119,6 +123,15 @@ service cloud.firestore {
         incoming().createdAt == existing().createdAt;
     }
 
+    function isValidDailyCounterFields(data, dateKey) {
+      return data.keys().hasAll(['orderDate', 'count', 'updatedAt']) &&
+        data.keys().hasOnly(['orderDate', 'count', 'updatedAt']) &&
+        data.orderDate is string && data.orderDate.size() == 10 && data.orderDate == dateKey &&
+        data.count is int && data.count >= 1 && data.count <= 9999 &&
+        data.updatedAt is timestamp &&
+        data.updatedAt == request.time;
+    }
+
     function isValidAdminUser(data, adminId) {
       return data.keys().hasAll(['uid', 'name', 'email', 'addedBy', 'createdAt']) &&
         data.keys().hasOnly(['uid', 'name', 'email', 'addedBy', 'createdAt']) &&
@@ -135,11 +148,13 @@ service cloud.firestore {
     // --- Collection: /orders/{orderId} ---
     // Evaluation order: Auth -> Static Validation -> Relational Check (Denial-of-Wallet guard).
     // Contains customer PII: reads, updates, and deletes are strictly restricted to verified admins.
-    // Public creation is strictly schema-validated for website customers submitting gas orders.
+    // Public creation is strictly schema-validated and atomically bound to /dailyCounters/{orderDate}.
     match /orders/{orderId} {
       allow get: if isVerifiedUser() && isValidId(orderId) && isAdmin();
       allow list: if isVerifiedUser() && isAdmin();
-      allow create: if isValidId(orderId) && isValidOrderCreate(incoming());
+      allow create: if isValidId(orderId) &&
+        isValidOrderCreate(incoming()) &&
+        existsAfter(/databases/$(database)/documents/dailyCounters/$(incoming().orderDate));
       allow update: if isVerifiedUser() &&
         isValidId(orderId) &&
         isValidOrderFields(incoming()) &&
@@ -148,6 +163,22 @@ service cloud.firestore {
         incoming().updatedAt == request.time &&
         ((!(existing().status in ['entregue', 'cancelado']) && isAdmin()) || isAdmin());
       allow delete: if isVerifiedUser() && isValidId(orderId) && isAdmin();
+    }
+
+    // --- Collection: /dailyCounters/{dateKey} ---
+    // Non-PII daily sequential counter (strictly +1 increments only; list/delete restricted to admins).
+    match /dailyCounters/{dateKey} {
+      allow get: if isValidDateKey(dateKey);
+      allow list: if isVerifiedUser() && isAdmin();
+      allow create: if isValidDateKey(dateKey) &&
+        isValidDailyCounterFields(incoming(), dateKey) &&
+        incoming().count == 1;
+      allow update: if isValidDateKey(dateKey) &&
+        isValidDailyCounterFields(incoming(), dateKey) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['count', 'updatedAt']) &&
+        incoming().orderDate == existing().orderDate &&
+        incoming().count == existing().count + 1;
+      allow delete: if isVerifiedUser() && isValidDateKey(dateKey) && isAdmin();
     }
 
     // --- Collection: /admins/{adminId} ---
