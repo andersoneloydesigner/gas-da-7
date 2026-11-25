@@ -479,7 +479,7 @@ function HomeLanding() {
         <Section3DWrapper sectionId="inicio" sectionColor="#121521" isHero className="z-30">
         <section
           id="inicio"
-          className="bg-[#121521] border-b-4 border-[#00B8F4] rounded-b-[2.5rem] md:rounded-b-[4rem] relative z-30 min-h-[680px] md:min-h-[740px] pt-24 md:pt-28 pb-10 flex items-center"
+          className="bg-[#121521] rounded-b-[2.5rem] md:rounded-b-[4rem] relative z-30 min-h-[680px] md:min-h-[740px] pt-24 md:pt-28 pb-10 flex items-center"
         >
           <HeroGeoPattern />
           <div className="max-w-7xl mx-auto px-6 py-4 md:py-8 relative z-10 w-full grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-4 items-center">
@@ -490,10 +490,6 @@ function HomeLanding() {
               transition={{ duration: 0.72, ease: PIKA_EASE }}
               className="lg:col-span-5 text-left space-y-6 relative z-10"
             >
-              <p className="text-xs uppercase tracking-widest text-[#00B8F4] font-extrabold">
-                Disk Gás em Lages · Atendimento em Toda a Cidade
-              </p>
-
               <h1 className="text-[2.25rem] sm:text-5xl lg:text-[3.2rem] font-extrabold tracking-tight text-white leading-[1.08] [text-wrap:balance]">
                 Disk Gás com Entrega Rápida em{" "}
                 <span className="text-[#F26513]">Lages/SC</span>
@@ -683,12 +679,12 @@ function HomeLanding() {
         <Section3DWrapper sectionId="servicos" sectionColor="#FFF9F5">
         <section id="servicos" className="py-20 bg-[#FFF9F5] border-b border-[#FFE1CC]">
           <div className="max-w-7xl mx-auto px-6 space-y-12">
-            <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-center md:justify-start gap-4 md:gap-8">
-              {/* Left-side landing dock for the Hero 3D botijão teleport */}
+            <div className="relative max-w-5xl mx-auto">
+              {/* Left-side landing dock positioned cleanly beside the centered heading */}
               <div
                 id="mascot-servicos-anchor"
                 aria-hidden="true"
-                className="relative w-[150px] h-[175px] sm:w-[170px] sm:h-[195px] md:w-[205px] md:h-[230px] shrink-0 flex items-end justify-center"
+                className="relative mx-auto mb-4 lg:mb-0 lg:mx-0 lg:absolute lg:top-1/2 lg:-translate-y-1/2 lg:-left-6 xl:left-0 2xl:left-2 w-[150px] h-[175px] sm:w-[165px] sm:h-[190px] lg:w-[185px] lg:h-[210px] shrink-0 flex items-end justify-center pointer-events-none"
               >
                 <TeleportSmokePuff zone="servicos" />
                 <div
@@ -700,15 +696,15 @@ function HomeLanding() {
 
               <motion.div
                 {...headerRevealProps}
-                className="text-center md:text-left max-w-2xl space-y-3"
+                className="text-center max-w-2xl mx-auto space-y-3"
               >
-                <p className="text-xs uppercase tracking-widest text-[#F26513] font-extrabold">
+                <p className="text-xs uppercase tracking-widest text-[#F26513] font-extrabold text-center">
                   Disk Gás · Botijões & Tele-Entrega em Lages
                 </p>
-                <h2 className="text-2xl md:text-4xl font-extrabold text-[#121521] tracking-tight [text-wrap:balance]">
+                <h2 className="text-2xl md:text-4xl font-extrabold text-[#121521] tracking-tight text-center [text-wrap:balance]">
                   Soluções em Gás para Sua <span className="text-[#F26513]">Casa ou Empresa</span>
                 </h2>
-                <p className="text-xs md:text-sm text-[#33394D] leading-relaxed font-medium">
+                <p className="text-xs md:text-sm text-[#33394D] leading-relaxed font-medium text-center">
                   Confira nossos produtos com entrega rápida em toda a cidade de Lages/SC: botijão P13 residencial e cilindro P45 comercial, com opção de recarga ou completo sem casco.
                 </p>
               </motion.div>
