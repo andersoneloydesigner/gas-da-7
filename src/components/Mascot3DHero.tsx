@@ -7,7 +7,6 @@ import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { IMAGES } from "../constants";
-import TeleportSmokePuff from "./TeleportSmokePuff";
 
 const R = 1.06; // Main cylinder radius
 
@@ -139,12 +138,6 @@ export default function Mascot3DHero() {
   const [webglFailed, setWebglFailed] = useState(false);
   const jumpVelocityRef = useRef(0);
   const jumpHeightRef = useRef(0);
-
-  const triggerHeroSmoke = () => {
-    window.dispatchEvent(
-      new CustomEvent("gas7-mascot-teleport", { detail: { target: "hero" } })
-    );
-  };
 
   const triggerCheerHop = () => {
     jumpVelocityRef.current = 2.65;
@@ -885,14 +878,12 @@ export default function Mascot3DHero() {
     };
     window.addEventListener("resize", handleResize);
 
-    // Animation Loop (Hero Pop-in with Smoke Puff, Single 360° Spin, Repetitive Motion & Occasional Hops)
+    // Animation Loop (Hero Pop-in, Single 360° Spin & Repetitive Motion)
     let frameId = 0;
     let isDisposed = false;
     let lastTime = performance.now();
     const startTime = lastTime;
-    let popProgress = prefersReducedMotion ? 1 : 0; // elastic pop-in out of smoke puff
-    let heroHopCooldown = 2.4; // seconds until next occasional hop in Hero
-    let hasTriggeredEntrySmoke = false;
+    let popProgress = prefersReducedMotion ? 1 : 0; // elastic pop-in
 
     const easeOutBack = (t: number) => {
       const c1 = 1.95;
@@ -928,12 +919,6 @@ export default function Mascot3DHero() {
       const heroRect = heroStage.getBoundingClientRect();
       const isOffscreen = heroRect.bottom < -30 || heroRect.top > vh + 30;
 
-      // Trigger entrance comic smoke puff once Hero is visible
-      if (!hasTriggeredEntrySmoke && !isOffscreen && !prefersReducedMotion) {
-        hasTriggeredEntrySmoke = true;
-        triggerHeroSmoke();
-      }
-
       // Advance elastic pop-in timer (0 -> 1 over ~0.52s)
       if (popProgress < 1) {
         popProgress = Math.min(1, popProgress + dt / 0.52);
@@ -966,26 +951,13 @@ export default function Mascot3DHero() {
         }
       }
 
-      // 2. Single 360° Intro Spin -> Lively Repetitive Motion & Occasional Playful Hops + Smoke Puff
+      // 2. Single 360° Intro Spin -> Lively Repetitive Motion
       if (!prefersReducedMotion) {
         const spinDuration = 0.95;
         const spinT = Math.min(1, elapsed / spinDuration);
         const easedSpin = 1 - Math.pow(1 - spinT, 3);
         const singleIntroSpin = easedSpin * Math.PI * 2;
         const settledBlend = spinT >= 1 ? 1 : Math.pow(spinT, 2);
-
-        // Occasional playful hop when settled and visible in Hero
-        if (!isOffscreen && spinT >= 1) {
-          heroHopCooldown -= dt;
-          if (
-            heroHopCooldown <= 0 &&
-            jumpHeightRef.current === 0 &&
-            jumpVelocityRef.current === 0
-          ) {
-            jumpVelocityRef.current = 2.65;
-            heroHopCooldown = 2.9 + Math.random() * 1.4;
-          }
-        }
 
         const heroBob = Math.sin(elapsed * 2.85) * 0.075 * settledBlend;
         const heroFloatX = Math.sin(elapsed * 1.85) * 0.055 * settledBlend;
@@ -1044,14 +1016,11 @@ export default function Mascot3DHero() {
 
   return (
     <div className="relative w-full flex items-center justify-center select-none">
-      {/* Hero Stage Anchor (holds 3D mascot, smoke puff, shadow & "OH O GÁS!" callout) */}
+      {/* Hero Stage Anchor (holds 3D mascot, shadow & "OH O GÁS!" callout) */}
       <div
         ref={heroStageRef}
         className="relative w-full max-w-[820px] h-[510px] sm:h-[640px] md:h-[750px] md:-my-16 flex items-center justify-center"
       >
-        {/* Cartoon smoke puff burst on Hero arrival and playful hops */}
-        <TeleportSmokePuff zone="hero" />
-
         {/* Clean dark contact shadow dynamically aligned right under the mascot */}
         <div
           ref={shadowRef}
