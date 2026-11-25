@@ -26,6 +26,7 @@ interface ResolvedPlace {
 const DEPOT_QUERIES = [
   "Gás da 7, Rua Sete de Setembro, 1749, Santa Helena, Lages - SC, Brasil",
   "Rua Sete de Setembro, 1749, Santa Helena, Lages - SC, 88504-453, Brasil",
+  "Rua Sete de Setembro, 1749, Lages, SC, Brasil",
 ];
 
 function isQuotaError(error: unknown): boolean {
