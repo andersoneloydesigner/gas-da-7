@@ -3,278 +3,97 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from "react";
-import {
-  APIProvider,
-  APILoadingStatus,
-  Map as GoogleMap,
-  AdvancedMarker,
-  Pin,
-  InfoWindow,
-  useAdvancedMarkerRef,
-  useApiLoadingStatus,
-  useMapsLibrary,
-} from "@vis.gl/react-google-maps";
-import { MapPin, ExternalLink, Loader2, Navigation } from "lucide-react";
+import React from "react";
+import { ExternalLink, MapPin, Navigation } from "lucide-react";
 import { APP_DETAILS } from "../constants";
-
-interface ResolvedPlace {
-  position: google.maps.LatLngLiteral;
-  displayName: string;
-  formattedAddress: string;
-  googleMapsURI: string;
-}
-
-const MAPS_LIBRARIES: ("places" | "marker")[] = ["places", "marker"];
-
-const DEPOT_QUERIES = [
-  "Gás da 7, Rua Sete de Setembro, 1749, Santa Helena, Lages - SC, Brasil",
-  "Rua Sete de Setembro, 1749, Santa Helena, Lages - SC, 88504-453, Brasil",
-  "Rua Sete de Setembro, 1749, Lages, SC, Brasil",
-];
-
-function isQuotaError(error: unknown): boolean {
-  if (!error) return false;
-  const text =
-    error instanceof Error
-      ? `${error.name} ${error.message}`
-      : typeof error === "object"
-      ? JSON.stringify(error)
-      : String(error);
-  return (
-    text.includes("RESOURCE_EXHAUSTED") ||
-    text.includes("OVER_QUERY_LIMIT") ||
-    text.includes("OverQuotaMapError") ||
-    text.includes("QuotaExceededError") ||
-    text.includes("429")
-  );
-}
-
-const DepotMapInner: React.FC = () => {
-  const apiStatus = useApiLoadingStatus();
-  const placesLib = useMapsLibrary("places");
-  const [markerRef, marker] = useAdvancedMarkerRef();
-
-  const [placeData, setPlaceData] = useState<ResolvedPlace | null>(null);
-  const [infoOpen, setInfoOpen] = useState(true);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
-
-  useEffect(() => {
-    if (
-      apiStatus === APILoadingStatus.FAILED ||
-      apiStatus === APILoadingStatus.AUTH_FAILURE
-    ) {
-      setStatus("error");
-    }
-  }, [apiStatus]);
-
-  useEffect(() => {
-    if (!placesLib) return;
-
-    let cancelled = false;
-
-    const resolveDepotLocation = async () => {
-      setStatus("loading");
-      try {
-        // Resolve coordinates dynamically via Places API (New) Text Search
-        // Ref: https://developers.google.com/maps/documentation/javascript/place-search?utm_campaign=gmp_mcp_codeassist_v1_aistudio
-        let matchedPlace: google.maps.places.Place | undefined;
-
-        for (const textQuery of DEPOT_QUERIES) {
-          const response = await placesLib.Place.searchByText({
-            textQuery,
-            fields: ["displayName", "formattedAddress", "location", "googleMapsURI"],
-            language: "pt-BR",
-            region: "br",
-            maxResultCount: 1,
-          });
-
-          const firstMatch = response?.places?.[0];
-          if (firstMatch?.location) {
-            matchedPlace = firstMatch;
-            break;
-          }
-        }
-
-        if (cancelled) return;
-
-        if (matchedPlace?.location) {
-          const position: google.maps.LatLngLiteral = {
-            lat: matchedPlace.location.lat(),
-            lng: matchedPlace.location.lng(),
-          };
-          setPlaceData({
-            position,
-            displayName: matchedPlace.displayName || APP_DETAILS.name,
-            formattedAddress: matchedPlace.formattedAddress || APP_DETAILS.address,
-            googleMapsURI: matchedPlace.googleMapsURI || APP_DETAILS.googleShareUrl,
-          });
-          setStatus("ready");
-        } else {
-          setStatus("error");
-        }
-      } catch (err) {
-        if (cancelled) return;
-        if (isQuotaError(err)) {
-          window.dispatchEvent(new CustomEvent("gmp-quota-exceeded"));
-        }
-        setStatus("error");
-      }
-    };
-
-    void resolveDepotLocation();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [placesLib]);
-
-  if (status === "loading") {
-    return (
-      <div className="w-full h-[380px] sm:h-[420px] lg:h-[460px] bg-[#121521] flex flex-col items-center justify-center gap-3 p-6 text-center text-white">
-        <Loader2 className="w-7 h-7 text-[#00B8F4] animate-spin" />
-        <p className="text-sm font-bold tracking-tight">
-          Carregando mapa da <span className="text-[#00B8F4]">Gás da 7</span> em Lages/SC...
-        </p>
-        <p className="text-xs text-white/70 max-w-xs">
-          {APP_DETAILS.address}
-        </p>
-      </div>
-    );
-  }
-
-  if (status === "error" || !placeData) {
-    return (
-      <div className="w-full h-[380px] sm:h-[420px] lg:h-[460px] bg-[#121521] flex flex-col items-center justify-center gap-4 p-8 text-center text-white">
-        <div className="w-12 h-12 rounded-2xl bg-[#00B8F4]/15 border-2 border-[#00B8F4] flex items-center justify-center">
-          <MapPin className="w-6 h-6 text-[#00B8F4]" />
-        </div>
-        <div className="space-y-1.5 max-w-sm">
-          <h3 className="text-base font-extrabold">{APP_DETAILS.name} · Depósito</h3>
-          <p className="text-xs sm:text-sm text-white/80 leading-relaxed">
-            {APP_DETAILS.address} · {APP_DETAILS.cep}
-          </p>
-        </div>
-        <a
-          href={APP_DETAILS.googleShareUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 bg-[#00B8F4] text-[#121521] hover:bg-white hover:text-[#121521] px-5 py-3 rounded-xl text-xs font-extrabold transition-all"
-        >
-          <Navigation className="w-4 h-4" />
-          <span>Abrir no Google Maps</span>
-          <ExternalLink className="w-3.5 h-3.5" />
-        </a>
-      </div>
-    );
-  }
-
-  return (
-    <div className="w-full h-[380px] sm:h-[420px] lg:h-[460px] relative">
-      <GoogleMap
-        defaultCenter={placeData.position}
-        defaultZoom={16}
-        mapId="DEMO_MAP_ID"
-        internalUsageAttributionIds={["gmp_mcp_codeassist_v1_aistudio"]}
-        gestureHandling="cooperative"
-        mapTypeControl={false}
-        streetViewControl={true}
-        fullscreenControl={true}
-        className="w-full h-full"
-      >
-        <AdvancedMarker
-          ref={markerRef}
-          position={placeData.position}
-          title={placeData.displayName}
-          onClick={() => setInfoOpen((prev) => !prev)}
-        >
-          <Pin
-            background="#F26513"
-            borderColor="#121521"
-            glyphColor="#FFFFFF"
-            scale={1.15}
-          />
-        </AdvancedMarker>
-
-        {infoOpen && marker && (
-          <InfoWindow
-            anchor={marker}
-            onCloseClick={() => setInfoOpen(false)}
-            maxWidth={280}
-          >
-            <div className="p-1 space-y-2 text-[#121521] font-sans">
-              <div className="space-y-0.5">
-                <p className="text-sm font-extrabold text-[#121521] leading-tight">
-                  {APP_DETAILS.name}
-                </p>
-                <p className="text-xs text-[#33394D] leading-snug">
-                  {placeData.formattedAddress}
-                </p>
-              </div>
-              <div className="pt-1.5 border-t border-[#FFE1CC] flex items-center justify-between gap-2">
-                <span className="text-[11px] font-bold text-[#F26513]">
-                  {APP_DETAILS.hoursShort}
-                </span>
-                <a
-                  href={placeData.googleMapsURI}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#121521] hover:text-[#F26513] transition-colors shrink-0"
-                >
-                  <span>Rotas</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-            </div>
-          </InfoWindow>
-        )}
-      </GoogleMap>
-    </div>
-  );
-};
+import mapaLagesOsm from "../assets/images/mapa_lages_osm.png";
 
 const LocationMap: React.FC = React.memo(() => {
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
-
-  if (!apiKey) {
-    return (
-      <div className="w-full h-[380px] sm:h-[420px] lg:h-[460px] bg-[#121521] rounded-2xl border-2 border-[#00B8F4] flex flex-col items-center justify-center gap-4 p-8 text-center text-white">
-        <div className="w-12 h-12 rounded-2xl bg-[#00B8F4]/15 border-2 border-[#00B8F4] flex items-center justify-center">
-          <MapPin className="w-6 h-6 text-[#00B8F4]" />
-        </div>
-        <div className="space-y-1.5 max-w-sm">
-          <h3 className="text-base font-extrabold">{APP_DETAILS.name} · Depósito</h3>
-          <p className="text-xs sm:text-sm text-white/80 leading-relaxed">
-            {APP_DETAILS.address} · {APP_DETAILS.cep}
-          </p>
-        </div>
-        <a
-          href={APP_DETAILS.googleShareUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 bg-[#00B8F4] text-[#121521] hover:bg-white hover:text-[#121521] px-5 py-3 rounded-xl text-xs font-extrabold transition-all"
-        >
-          <Navigation className="w-4 h-4" />
-          <span>Ver no Google Maps</span>
-          <ExternalLink className="w-3.5 h-3.5" />
-        </a>
-      </div>
-    );
-  }
-
   return (
     <div
       data-map-container="true"
-      className="w-full h-[380px] sm:h-[420px] lg:h-[460px] rounded-2xl overflow-hidden border-2 border-[#FFE1CC] bg-white"
+      className="relative w-full h-[380px] sm:h-[420px] lg:h-[460px] rounded-2xl overflow-hidden border-2 border-[#FFE1CC] bg-[#f4efe6] group"
     >
-      <APIProvider
-        apiKey={apiKey}
-        language="pt-BR"
-        region="BR"
-        libraries={MAPS_LIBRARIES}
+      {/* Static high-definition street map print of Santa Helena, Lages/SC */}
+      <a
+        href={APP_DETAILS.googleShareUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`Abrir localização da ${APP_DETAILS.name} no Google Maps`}
+        className="block w-full h-full relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#F26513]"
       >
-        <DepotMapInner />
-      </APIProvider>
+        <img
+          src={mapaLagesOsm}
+          alt={`Mapa de localização do depósito ${APP_DETAILS.name} na ${APP_DETAILS.address}`}
+          className="w-full h-full object-cover object-center transition-transform duration-500 ease-out group-hover:scale-[1.02]"
+          loading="lazy"
+        />
+
+        {/* Subtle warm vignette for crisp card & pin contrast */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#121521]/30 via-transparent to-transparent"
+        />
+
+        {/* Floating Info Card directly above the depot pin */}
+        <div
+          style={{ left: "50%", top: "58%" }}
+          className="pointer-events-none absolute -translate-x-1/2 -translate-y-[calc(100%+52px)] w-[250px] sm:w-[290px] bg-white rounded-xl border border-[#FFE1CC] shadow-[0_10px_28px_rgba(18,21,33,0.18)] p-3.5 text-left"
+        >
+          <p className="text-sm font-extrabold text-[#121521] leading-tight">
+            {APP_DETAILS.name}
+          </p>
+          <p className="text-xs text-[#33394D] leading-snug mt-0.5">
+            {APP_DETAILS.address} · {APP_DETAILS.cep}
+          </p>
+          <div className="mt-2 pt-2 border-t border-[#FFE1CC] flex items-center justify-between gap-2">
+            <span className="text-[11px] font-bold text-[#F26513]">
+              {APP_DETAILS.hoursShort}
+            </span>
+            <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#121521] shrink-0">
+              <span>Rotas</span>
+              <ExternalLink className="w-3 h-3" />
+            </span>
+          </div>
+          {/* Small downward pointer triangle */}
+          <span
+            aria-hidden="true"
+            className="absolute left-1/2 -bottom-1.5 -translate-x-1/2 w-3 h-3 bg-white border-r border-b border-[#FFE1CC] rotate-45"
+          />
+        </div>
+
+        {/* Exact Depot Map Pin on Rua Sete de Setembro, 1749 */}
+        <div
+          style={{ left: "50%", top: "58%" }}
+          className="pointer-events-none absolute -translate-x-1/2 -translate-y-full flex flex-col items-center"
+        >
+          <span className="relative flex items-center justify-center">
+            <span className="absolute -inset-2 rounded-full bg-[#F26513]/30 animate-ping" />
+            <span className="relative w-10 h-10 rounded-full bg-[#F26513] border-[3px] border-white shadow-[0_6px_16px_rgba(18,21,33,0.35)] flex items-center justify-center text-white">
+              <MapPin className="w-5 h-5 fill-white/20" />
+            </span>
+          </span>
+          <span className="w-3 h-1.5 rounded-full bg-[#121521]/35 blur-[1px] -mt-0.5" />
+        </div>
+      </a>
+
+      {/* Prominent CTA Button to Open Google Maps */}
+      <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3 pointer-events-none">
+        <a
+          href={APP_DETAILS.googleShareUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="pointer-events-auto inline-flex items-center gap-2 bg-[#121521] hover:bg-[#F26513] text-white px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl text-xs font-extrabold shadow-[0_8px_22px_rgba(18,21,33,0.32)] border border-white/15 transition-all active:translate-y-px"
+        >
+          <Navigation className="w-4 h-4 text-[#00B8F4] shrink-0" />
+          <span>Ir para o Google Maps</span>
+          <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+        </a>
+
+        <span className="bg-white/90 backdrop-blur-sm text-[#33394D] text-[10px] font-semibold px-2 py-1 rounded-md border border-[#121521]/10">
+          © OpenStreetMap
+        </span>
+      </div>
     </div>
   );
 });

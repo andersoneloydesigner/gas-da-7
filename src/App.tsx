@@ -28,7 +28,6 @@ import {
 // Subcomponents & Pages
 import Mascot3DHero from "./components/Mascot3DHero";
 import HeroGeoPattern from "./components/HeroGeoPattern";
-import TeleportSmokePuff from "./components/TeleportSmokePuff";
 import ServicesShowcase from "./components/ServicesShowcase";
 import ContactForm from "./components/ContactForm";
 import OfficialPagesModal from "./components/OfficialPagesModal";
@@ -133,13 +132,6 @@ function HomeLanding() {
   // Official Pages Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<"abnt" | "terms" | "privacy" | null>(null);
-  const [gmpQuotaExceeded, setGmpQuotaExceeded] = useState(false);
-
-  useEffect(() => {
-    const handleQuotaExceeded = () => setGmpQuotaExceeded(true);
-    window.addEventListener("gmp-quota-exceeded", handleQuotaExceeded);
-    return () => window.removeEventListener("gmp-quota-exceeded", handleQuotaExceeded);
-  }, []);
 
   useEffect(() => {
     const handleScrollGlass = () => {
@@ -350,30 +342,10 @@ function HomeLanding() {
 
   return (
     <div className="min-h-screen bg-white text-[#121521] flex flex-col overflow-x-clip selection:bg-[#F26513] selection:text-white">
-      {/* Google Maps Platform Demo Key Quota Banner */}
-      {gmpQuotaExceeded && (
-        <div className="bg-amber-50 border-b border-amber-200 text-amber-900 px-4 py-2.5 text-xs md:text-sm text-center sticky top-0 z-50 shadow-sm">
-          <span>
-            Google Maps Platform quota reached. If you are the app owner, visit{" "}
-            <a
-              href="https://developers.google.com/maps/ai/ai-studio?utm_campaign=gmp_mcp_codeassist_v1_aistudio#quota_exceeded_errors"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline font-semibold text-amber-950 hover:text-amber-800"
-            >
-              maps developer site
-            </a>{" "}
-            for instructions to update your account.
-          </span>
-        </div>
-      )}
-
       {/* 1. Header / TopNavBar - Floating Bar with Dark Blue Glass Effect on Scroll */}
       <nav
         aria-label="Navegação Principal"
-        className={`text-white fixed ${
-          gmpQuotaExceeded ? "top-14" : "top-3"
-        } inset-x-0 mx-auto w-[calc(100%-2rem)] lg:w-max max-w-[calc(100%-2rem)] z-40 rounded-2xl border transition-all duration-300 ${
+        className={`text-white fixed top-3 inset-x-0 mx-auto w-[calc(100%-2rem)] lg:w-max max-w-[calc(100%-2rem)] z-40 rounded-2xl border transition-all duration-300 ${
           isScrolled
             ? "bg-[#121521]/78 backdrop-blur-xl backdrop-saturate-150 border-[#00B8F4]/35 ring-1 ring-inset ring-white/15"
             : "bg-[#F26513] border-[#d95308]"
@@ -679,36 +651,20 @@ function HomeLanding() {
         <Section3DWrapper sectionId="servicos" sectionColor="#FFF9F5">
         <section id="servicos" className="py-20 bg-[#FFF9F5] border-b border-[#FFE1CC]">
           <div className="max-w-7xl mx-auto px-6 space-y-12">
-            <div className="relative max-w-5xl mx-auto">
-              {/* Left-side landing dock positioned cleanly beside the centered heading */}
-              <div
-                id="mascot-servicos-anchor"
-                aria-hidden="true"
-                className="relative mx-auto mb-4 lg:mb-0 lg:mx-0 lg:absolute lg:top-1/2 lg:-translate-y-1/2 lg:-left-6 xl:left-0 2xl:left-2 w-[150px] h-[175px] sm:w-[165px] sm:h-[190px] lg:w-[185px] lg:h-[210px] shrink-0 flex items-end justify-center pointer-events-none"
-              >
-                <TeleportSmokePuff zone="servicos" />
-                <div
-                  id="mascot-servicos-shadow"
-                  className="w-[62%] h-5 rounded-full bg-[#121521]/20 blur-md mb-2 transition-opacity duration-200"
-                  style={{ opacity: 0 }}
-                />
-              </div>
-
-              <motion.div
-                {...headerRevealProps}
-                className="text-center max-w-2xl mx-auto space-y-3"
-              >
-                <p className="text-xs uppercase tracking-widest text-[#F26513] font-extrabold text-center">
-                  Disk Gás · Botijões & Tele-Entrega em Lages
-                </p>
-                <h2 className="text-2xl md:text-4xl font-extrabold text-[#121521] tracking-tight text-center [text-wrap:balance]">
-                  Soluções em Gás para Sua <span className="text-[#F26513]">Casa ou Empresa</span>
-                </h2>
-                <p className="text-xs md:text-sm text-[#33394D] leading-relaxed font-medium text-center">
-                  Confira nossos produtos com entrega rápida em toda a cidade de Lages/SC: botijão P13 residencial e cilindro P45 comercial, com opção de recarga ou completo sem casco.
-                </p>
-              </motion.div>
-            </div>
+            <motion.div
+              {...headerRevealProps}
+              className="text-center max-w-2xl mx-auto space-y-3"
+            >
+              <p className="text-xs uppercase tracking-widest text-[#F26513] font-extrabold text-center">
+                Disk Gás · Botijões & Tele-Entrega em Lages
+              </p>
+              <h2 className="text-2xl md:text-4xl font-extrabold text-[#121521] tracking-tight text-center [text-wrap:balance]">
+                Soluções em Gás para Sua <span className="text-[#F26513]">Casa ou Empresa</span>
+              </h2>
+              <p className="text-xs md:text-sm text-[#33394D] leading-relaxed font-medium text-center">
+                Confira nossos produtos com entrega rápida em toda a cidade de Lages/SC: botijão P13 residencial e cilindro P45 comercial, com opção de recarga ou completo sem casco.
+              </p>
+            </motion.div>
 
             <ServicesShowcase onSelectService={(serviceId) => handleGoToOrderForm(serviceId)} />
           </div>
