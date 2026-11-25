@@ -5,11 +5,14 @@
 
 export interface GasService {
   id: string;
+  semCascoId: string;
   name: string;
   badge?: string;
   description: string;
   detailedDesc?: string;
   image?: string;
+  priceRefill: number;
+  priceWithoutShell: number;
 }
 
 export interface SafetyTip {

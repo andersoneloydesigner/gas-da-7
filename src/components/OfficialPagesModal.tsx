@@ -136,7 +136,7 @@ export default function OfficialPagesModal({ isOpen, initialType, onClose }: Off
                       1. Lacre de Segurança e Peso Correto
                     </h4>
                     <p className="text-xs text-[#33394D] leading-relaxed">
-                      Todos os botijões P13, P20 e cilindros P45 são entregues com lacre inviolável sobre a válvula e passaram por requalificação periódica dentro das normas vigentes, assegurando o peso líquido exato.
+                      Todos os botijões P13 e cilindros P45 são entregues com lacre inviolável sobre a válvula e passaram por requalificação periódica dentro das normas vigentes, assegurando o peso líquido exato.
                     </p>
                   </div>
 

@@ -6,13 +6,46 @@
 import { doc, runTransaction, serverTimestamp, Timestamp } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType } from "../firebase";
 
-export const PRODUCT_OPTIONS = [
-  "Botijão P13 (13 kg - Residencial)",
-  "Gás P20 (20 kg - Empilhadeira)",
-  "Cilindro P45 (45 kg - Comercial)",
-  "Instalação & Conferência de Segurança",
-  "Dúvida / Outro Pedido",
+export interface ProductCatalogItem {
+  key: string;
+  label: string;
+  shortTitle: string;
+  subtitle: string;
+  price: number;
+}
+
+export const PRODUCT_CATALOG: readonly ProductCatalogItem[] = [
+  {
+    key: "p13",
+    label: "Botijão P13 (Com Casco / Recarga) — R$ 125,00 + frete",
+    shortTitle: "Botijão P13",
+    subtitle: "Com Casco (Recarga)",
+    price: 125,
+  },
+  {
+    key: "p13-sem-casco",
+    label: "Botijão P13 (Sem Casco / Completo) — R$ 350,00 + frete",
+    shortTitle: "Botijão P13",
+    subtitle: "Sem Casco (Completo)",
+    price: 350,
+  },
+  {
+    key: "p45",
+    label: "Cilindro P45 (Com Casco / Recarga) — R$ 450,00 + frete",
+    shortTitle: "Cilindro P45",
+    subtitle: "Com Casco (Recarga)",
+    price: 450,
+  },
+  {
+    key: "p45-sem-casco",
+    label: "Cilindro P45 (Sem Casco / Completo) — R$ 1.250,00 + frete",
+    shortTitle: "Cilindro P45",
+    subtitle: "Sem Casco (Completo)",
+    price: 1250,
+  },
 ] as const;
+
+export const PRODUCT_OPTIONS = PRODUCT_CATALOG.map((item) => item.label);
 
 export const PAYMENT_OPTIONS = [
   "Pix na Entrega",
@@ -22,13 +55,25 @@ export const PAYMENT_OPTIONS = [
 ] as const;
 
 export const SERVICE_TO_PRODUCT_MAP: Record<string, string> = {
-  p13: PRODUCT_OPTIONS[0],
-  p20: PRODUCT_OPTIONS[1],
-  p45: PRODUCT_OPTIONS[2],
-  seguranca: PRODUCT_OPTIONS[3],
-  instalacao: PRODUCT_OPTIONS[3],
-  outro: PRODUCT_OPTIONS[4],
+  p13: PRODUCT_CATALOG[0].label,
+  "p13-recarga": PRODUCT_CATALOG[0].label,
+  "p13-sem-casco": PRODUCT_CATALOG[1].label,
+  p45: PRODUCT_CATALOG[2].label,
+  "p45-recarga": PRODUCT_CATALOG[2].label,
+  "p45-sem-casco": PRODUCT_CATALOG[3].label,
 };
+
+export function formatBRL(value: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(value);
+}
+
+export function getUnitPriceForProduct(productLabel: string): number {
+  const found = PRODUCT_CATALOG.find((item) => item.label === productLabel);
+  return found ? found.price : 0;
+}
 
 export type OrderStatus = "novo" | "em_rota" | "entregue" | "cancelado";
 

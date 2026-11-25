@@ -4,9 +4,11 @@
  */
 
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { IMAGES } from "../constants";
+import TeleportSmokePuff from "./TeleportSmokePuff";
 
 const R = 1.06; // Main cylinder radius
 
@@ -130,8 +132,11 @@ function createMouthCavityTexture() {
 }
 
 export default function Mascot3DHero() {
+  const heroStageRef = useRef<HTMLDivElement>(null);
+  const portalWrapperRef = useRef<HTMLDivElement>(null);
   const mountRef = useRef<HTMLDivElement>(null);
   const shadowRef = useRef<HTMLDivElement>(null);
+  const calloutRef = useRef<HTMLButtonElement>(null);
   const [webglFailed, setWebglFailed] = useState(false);
   const jumpVelocityRef = useRef(0);
   const jumpHeightRef = useRef(0);
@@ -142,7 +147,8 @@ export default function Mascot3DHero() {
 
   useEffect(() => {
     const container = mountRef.current;
-    if (!container) return;
+    const heroStage = heroStageRef.current;
+    if (!container || !heroStage) return;
 
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -172,8 +178,14 @@ export default function Mascot3DHero() {
       return;
     }
 
-    const width = container.clientWidth || 520;
-    const height = container.clientHeight || 560;
+    const initialStageW = heroStage.offsetWidth || 520;
+    const initialStageH = Math.max(320, heroStage.offsetHeight || 560);
+    if (portalWrapperRef.current) {
+      portalWrapperRef.current.style.width = `${initialStageW}px`;
+      portalWrapperRef.current.style.height = `${initialStageH}px`;
+    }
+    const width = initialStageW;
+    const height = initialStageH;
     const dpr = isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, 2);
 
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -837,17 +849,32 @@ export default function Mascot3DHero() {
       renderer.compile(postScene, postCamera);
     }
 
+    let currentBaseCamX = initialCam.camX;
+    let currentBaseCamZ = initialCam.camZ;
+    let stageWidth = initialStageW;
+    let stageHeight = initialStageH;
+
     // Resize Handler
     const handleResize = () => {
-      if (!container) return;
-      const w = container.clientWidth || 520;
-      const h = Math.max(320, container.clientHeight || 560);
+      if (!container || !heroStage) return;
+      const w = heroStage.offsetWidth || 520;
+      const h = Math.max(320, heroStage.offsetHeight || 560);
+      stageWidth = w;
+      stageHeight = h;
+
+      if (portalWrapperRef.current) {
+        portalWrapperRef.current.style.width = `${w}px`;
+        portalWrapperRef.current.style.height = `${h}px`;
+      }
+
       const nextDpr = isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, 2);
       const nextRtW = Math.max(1, Math.floor(w * nextDpr));
       const nextRtH = Math.max(1, Math.floor(h * nextDpr));
 
       const aspect = w / h;
       const cam = getCameraLayout(aspect);
+      currentBaseCamX = cam.camX;
+      currentBaseCamZ = cam.camZ;
       camera.aspect = aspect;
       camera.position.set(cam.camX, 0.21, cam.camZ);
       camera.lookAt(cam.camX, 0.21, 0);
@@ -862,11 +889,21 @@ export default function Mascot3DHero() {
     };
     window.addEventListener("resize", handleResize);
 
-    // Animation Loop (Cheerful Buoyant Idle + Click Hop)
+    // Animation Loop (Hero Idle + Zero-Overlap Teleport with Smoke Puff to #servicos Left Dock)
     let frameId = 0;
     let isDisposed = false;
     let lastTime = performance.now();
     const startTime = lastTime;
+    let locationMode: "hero" | "servicos" = "hero";
+    let popProgress = 1; // 0 -> 1 elastic cartoon pop-in out of smoke puff
+    let servicosSpin = 0;
+    let hasTriggeredInitialMode = false;
+
+    const easeOutBack = (t: number) => {
+      const c1 = 1.95;
+      const c3 = c1 + 1;
+      return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+    };
 
     function afterDraw(cb: () => void) {
       const gl = renderer.getContext() as WebGL2RenderingContext;
@@ -892,6 +929,113 @@ export default function Mascot3DHero() {
       lastTime = now;
       const elapsed = (now - startTime) / 1000;
 
+      // 1. Detect Arrival at #servicos (Zero Mid-Page Floating — Instant Teleport + Smoke Puff)
+      const vh = window.innerHeight || 800;
+      const heroRect = heroStage.getBoundingClientRect();
+      const servAnchor = document.getElementById("mascot-servicos-anchor");
+      const servSection = document.getElementById("servicos");
+
+      if (servAnchor && servSection) {
+        const servSectionRect = servSection.getBoundingClientRect();
+
+        if (!hasTriggeredInitialMode) {
+          hasTriggeredInitialMode = true;
+          if (servSectionRect.top < vh * 0.72) {
+            locationMode = "servicos";
+            popProgress = prefersReducedMotion ? 1 : 0;
+            servicosSpin = 0;
+            window.dispatchEvent(
+              new CustomEvent("gas7-mascot-teleport", { detail: { target: "servicos" } })
+            );
+          }
+        } else if (locationMode === "hero" && servSectionRect.top < vh * 0.72) {
+          locationMode = "servicos";
+          popProgress = prefersReducedMotion ? 1 : 0;
+          servicosSpin = 0;
+          window.dispatchEvent(
+            new CustomEvent("gas7-mascot-teleport", { detail: { target: "servicos" } })
+          );
+        } else if (locationMode === "servicos" && servSectionRect.top > vh * 0.85) {
+          locationMode = "hero";
+          popProgress = prefersReducedMotion ? 1 : 0;
+          servicosSpin = 0;
+          if (heroRect.bottom > 40) {
+            window.dispatchEvent(
+              new CustomEvent("gas7-mascot-teleport", { detail: { target: "hero" } })
+            );
+          }
+        }
+      }
+
+      // Advance elastic pop-in timer (0 -> 1 over ~0.52s)
+      if (popProgress < 1) {
+        popProgress = Math.min(1, popProgress + dt / 0.52);
+      }
+      const popScaleMul =
+        popProgress >= 1
+          ? 1
+          : Math.max(0.08, THREE.MathUtils.lerp(0.14, 1, easeOutBack(popProgress)));
+      const popOpacity =
+        popProgress >= 1 ? 1 : THREE.MathUtils.clamp((popProgress - 0.08) * 3.2, 0, 1);
+
+      const isInServicos = locationMode === "servicos" && Boolean(servAnchor);
+
+      // Keep Hero callout & floor shadow clean in Hero only
+      if (calloutRef.current) {
+        calloutRef.current.style.opacity = isInServicos ? "0" : "1";
+        calloutRef.current.style.pointerEvents = isInServicos ? "none" : "auto";
+      }
+      if (shadowRef.current) {
+        shadowRef.current.style.opacity = isInServicos ? "0" : "1";
+      }
+
+      // Show #servicos floor shadow cleanly only after arriving in #servicos
+      const servShadow = document.getElementById("mascot-servicos-shadow");
+      if (servShadow) {
+        servShadow.style.opacity = isInServicos ? popOpacity.toFixed(3) : "0";
+      }
+
+      // Pin strictly to either Hero Stage OR #servicos Left Dock (never floats over other sections)
+      let cx = heroRect.left + heroRect.width * 0.5;
+      let cy = heroRect.top + heroRect.height * 0.5;
+      let baseScale = stageWidth > 0 ? heroRect.width / stageWidth : 1;
+      let activeRect = heroRect;
+
+      if (isInServicos && servAnchor) {
+        const servRect = servAnchor.getBoundingClientRect();
+        activeRect = servRect;
+        cx = servRect.left + servRect.width * 0.5;
+        cy = servRect.top + servRect.height * 0.5;
+        baseScale = THREE.MathUtils.clamp(
+          (servRect.height * 1.18) / Math.max(1, stageHeight),
+          0.26,
+          0.48
+        );
+      }
+
+      const finalScale = baseScale * popScaleMul;
+
+      // Center camera horizontally when docked in #servicos; keep Hero offset in #inicio
+      const activeCamX = isInServicos ? 0 : currentBaseCamX;
+      camera.position.set(activeCamX, 0.21, currentBaseCamZ);
+      camera.lookAt(activeCamX, 0.21, 0);
+
+      // Hide strictly when active anchor is scrolled out of viewport so it never covers other content
+      const introFade = Math.min(1, elapsed / 0.35);
+      const isOffscreen = activeRect.bottom < -30 || activeRect.top > vh + 30;
+
+      if (portalWrapperRef.current) {
+        const tx = cx - stageWidth * 0.5;
+        const ty = cy - stageHeight * 0.5;
+        portalWrapperRef.current.style.transform = `translate3d(${tx.toFixed(1)}px, ${ty.toFixed(
+          1
+        )}px, 0) scale(${finalScale.toFixed(4)})`;
+        portalWrapperRef.current.style.opacity = isOffscreen
+          ? "0"
+          : (introFade * popOpacity).toFixed(3);
+      }
+
+      // 2. Cheer Hop Physics
       if (jumpHeightRef.current > 0 || jumpVelocityRef.current !== 0) {
         jumpVelocityRef.current -= 12.5 * dt;
         jumpHeightRef.current += jumpVelocityRef.current * dt;
@@ -901,37 +1045,62 @@ export default function Mascot3DHero() {
         }
       }
 
+      // 3. 3D Mascot Motion: Hero Buoyancy vs Continuous Lively Spin & Movement in #servicos
       if (!prefersReducedMotion) {
-        // 360-degree arrival spin synchronized with descent from top of the page
         const spinDuration = 1.1;
         const spinT = Math.min(1, elapsed / spinDuration);
         const easedSpin = 1 - Math.pow(1 - spinT, 3);
         const introSpin360 = easedSpin * Math.PI * 2;
         const idleBlend = spinT >= 1 ? 1 : Math.pow(spinT, 2);
 
-        const idleBob = Math.sin(elapsed * 2.5) * 0.038 * idleBlend;
-        const idleSway = Math.sin(elapsed * 1.65) * 0.024 * idleBlend;
-        const idleYaw = Math.sin(elapsed * 1.05) * 0.045 * idleBlend;
+        if (isInServicos) {
+          // Fast celebratory pop-in spin blending into continuous playful 360° spin
+          const popBurstSpin = (1 - Math.pow(1 - popProgress, 3)) * Math.PI * 2;
+          servicosSpin += dt * 1.55;
 
-        mascotRoot.position.y = idleBob + jumpHeightRef.current;
+          const dockedBob = Math.sin(elapsed * 3.15) * 0.115;
+          const dockedFloatX = Math.sin(elapsed * 2.0) * 0.095;
+          const dockedSway = Math.sin(elapsed * 2.0) * 0.09;
 
-        const stretch = 1 + jumpVelocityRef.current * 0.012 + Math.cos(elapsed * 2.5) * 0.01 * idleBlend;
-        const squash = 1 / Math.sqrt(Math.max(0.88, stretch));
-        mascotRoot.scale.set(squash, stretch, squash);
+          mascotRoot.position.x = dockedFloatX;
+          mascotRoot.position.y = dockedBob + jumpHeightRef.current;
 
-        mascotRoot.rotation.y = introSpin360 + idleYaw;
-        mascotBody.rotation.z = 0.075 + idleSway;
+          const stretch = 1 + jumpVelocityRef.current * 0.012 + Math.cos(elapsed * 3.15) * 0.022;
+          const squash = 1 / Math.sqrt(Math.max(0.88, stretch));
+          mascotRoot.scale.set(squash, stretch, squash);
+
+          mascotRoot.rotation.y = popBurstSpin + servicosSpin;
+          mascotBody.rotation.z = 0.075 + dockedSway;
+        } else {
+          const idleBob = Math.sin(elapsed * 2.5) * 0.038 * idleBlend;
+          const idleSway = Math.sin(elapsed * 1.65) * 0.024 * idleBlend;
+          const idleYaw = Math.sin(elapsed * 1.05) * 0.045 * idleBlend;
+
+          mascotRoot.position.x = 0;
+          mascotRoot.position.y = idleBob + jumpHeightRef.current;
+
+          const stretch =
+            1 + jumpVelocityRef.current * 0.012 + Math.cos(elapsed * 2.5) * 0.01 * idleBlend;
+          const squash = 1 / Math.sqrt(Math.max(0.88, stretch));
+          mascotRoot.scale.set(squash, stretch, squash);
+
+          mascotRoot.rotation.y = introSpin360 + idleYaw;
+          mascotBody.rotation.z = 0.075 + idleSway;
+        }
       }
 
-      // Pass 1: Render 3D mascot into offscreen renderTarget
-      renderer.setRenderTarget(renderTarget);
-      renderer.clear();
-      renderer.render(scene, camera);
+      // Skip GPU render passes when completely offscreen
+      if (!isOffscreen) {
+        // Pass 1: Render 3D mascot into offscreen renderTarget
+        renderer.setRenderTarget(renderTarget);
+        renderer.clear();
+        renderer.render(scene, camera);
 
-      // Pass 2: Composite 3D mascot with crisp black comic outline + outer white sticker border
-      renderer.setRenderTarget(null);
-      renderer.clear();
-      renderer.render(postScene, postCamera);
+        // Pass 2: Composite 3D mascot with crisp black comic outline + outer white sticker border
+        renderer.setRenderTarget(null);
+        renderer.clear();
+        renderer.render(postScene, postCamera);
+      }
 
       if (isSoftwareGl) {
         afterDraw(tick);
@@ -958,39 +1127,57 @@ export default function Mascot3DHero() {
     };
   }, []);
 
+  const portalCanvas = (
+    <div
+      ref={portalWrapperRef}
+      className="fixed top-0 left-0 z-30 pointer-events-none select-none will-change-transform origin-center"
+      style={{ opacity: 0 }}
+    >
+      <div ref={mountRef} className="relative w-full h-full">
+        {webglFailed && (
+          <img
+            src={IMAGES.mascotRef}
+            alt="Mascote 3D Gás da 7"
+            className="w-full h-full object-contain"
+            referrerPolicy="no-referrer"
+          />
+        )}
+      </div>
+
+      {/* Tight clickable hit target over the mascot body so transparent margins stay click-through */}
+      <button
+        type="button"
+        onClick={triggerCheerHop}
+        aria-label="Interagir com o Mascote 3D Gás da 7"
+        className="absolute left-[26%] top-[12%] w-[48%] h-[76%] pointer-events-auto cursor-pointer bg-transparent border-0 focus-visible:outline-none"
+      />
+    </div>
+  );
+
   return (
     <div className="relative w-full flex items-center justify-center select-none">
-      {/* Main Interactive Stage (+50% larger mascot, unclipped and in front of page elements) */}
-      <div className="relative w-full max-w-[820px] h-[510px] sm:h-[640px] md:h-[750px] md:-my-16 flex items-center justify-center">
-        {/* Clean dark contact shadow dynamically aligned right under the mascot */}
+      {/* Hero Stage Anchor (+50% larger mascot stage, holds shadow, smoke puff & OH O GÁS callout) */}
+      <div
+        ref={heroStageRef}
+        className="relative w-full max-w-[820px] h-[510px] sm:h-[640px] md:h-[750px] md:-my-16 flex items-center justify-center"
+      >
+        {/* Cartoon smoke puff when teleporting back to Hero */}
+        <TeleportSmokePuff zone="hero" />
+
+        {/* Clean dark contact shadow dynamically aligned right under the mascot in Hero */}
         <div
           ref={shadowRef}
           aria-hidden="true"
-          className="absolute bottom-4 -translate-x-1/2 w-[52%] h-8 rounded-full bg-black/45 blur-md pointer-events-none z-20"
+          className="absolute bottom-4 -translate-x-1/2 w-[52%] h-8 rounded-full bg-black/45 blur-md pointer-events-none z-20 transition-opacity duration-150"
         />
-
-        {/* Full-Width 3D Canvas Container (in front of page elements) */}
-        <div
-          ref={mountRef}
-          onClick={triggerCheerHop}
-          className="relative w-full h-full z-30 cursor-pointer"
-        >
-          {webglFailed && (
-            <img
-              src={IMAGES.mascotRef}
-              alt="Mascote 3D Gás da 7"
-              className="w-full h-full object-contain"
-              referrerPolicy="no-referrer"
-            />
-          )}
-        </div>
 
         {/* Animated "OH O GÁS!" Comic Callout Right Beside the 3D Mascot */}
         <button
+          ref={calloutRef}
           type="button"
           onClick={triggerCheerHop}
           aria-label="Oh o Gás!"
-          className="animate-oh-gas absolute right-0 sm:right-2 md:-right-2 top-[15%] sm:top-[17%] z-40 flex flex-col items-center cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F26513] rounded-xl p-1"
+          className="animate-oh-gas absolute right-0 sm:right-2 md:-right-2 top-[15%] sm:top-[17%] z-40 flex flex-col items-center cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F26513] rounded-xl p-1 transition-opacity duration-200"
         >
           <div className="flex flex-col items-center leading-[0.88] font-black tracking-tight uppercase text-center">
             <span
@@ -1029,6 +1216,9 @@ export default function Mascot3DHero() {
           </svg>
         </button>
       </div>
+
+      {/* Single 3D Mascot Portal able to descend smoothly from Hero (#inicio) to #servicos */}
+      {typeof document !== "undefined" ? createPortal(portalCanvas, document.body) : null}
     </div>
   );
 }

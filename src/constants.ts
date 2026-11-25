@@ -5,10 +5,8 @@
 
 import { GasService, SafetyTip } from "./types";
 
-import gasBotijaoP13Cozinha from "./assets/images/gas_botijao_p13_cozinha_1795010575119.jpg";
-import gasCilindroP45Comercial from "./assets/images/gas_cilindro_p45_comercial_1795010574381.jpg";
-import gasCilindroP20Empilhadeira from "./assets/images/gas_cilindro_p20_1795619954310.jpg";
-import gasSegurancaInstalacao from "./assets/images/gas_seguranca_instalacao_1795010575739.jpg";
+import botijaoP13Produto from "./assets/images/botijao_p13_produto_1795630485903.jpg";
+import cilindroP45Produto from "./assets/images/cilindro_p45_produto_1795630486489.jpg";
 
 export const APP_DETAILS = {
   name: "Gás da 7",
@@ -28,7 +26,7 @@ export const APP_DETAILS = {
   slogan: "Disk Gás com Entrega Rápida em Toda Lages/SC!",
   tagline: "Oh o Gás! Disk Gás ágil, seguro e com botijão lacrado em toda a cidade de Lages.",
   history:
-    "Com depósito na Rua Sete de Setembro, 1749, no Bairro Santa Helena, a Gás da 7 é referência em Disk Gás na região de Lages/SC, com atendimento em toda a cidade de Lages. Realizamos tele-entrega rápida de gás de cozinha GLP (botijões P13, P20 e P45) lacrados de fábrica, com conferência de segurança na instalação e atendimento todos os dias da semana para residências e comércios.",
+    "Com depósito na Rua Sete de Setembro, 1749, no Bairro Santa Helena, a Gás da 7 é referência em Disk Gás na região de Lages/SC, com atendimento em toda a cidade de Lages. Realizamos tele-entrega rápida de gás de cozinha GLP (botijões P13 e cilindros P45) lacrados de fábrica, com conferência de segurança na instalação e atendimento todos os dias da semana para residências e comércios.",
   mission:
     "Oferecer Disk Gás em toda a cidade de Lages/SC e região com entrega rápida, botijões certificados, segurança na instalação e atendimento direto por WhatsApp e telefone fixo.",
   vision:
@@ -53,43 +51,29 @@ export const IMAGES = {
 export const SERVICES: GasService[] = [
   {
     id: "p13",
-    name: "Botijão P13 (Uso Residencial)",
-    badge: "13 kg · Cozinha",
+    semCascoId: "p13-sem-casco",
+    name: "Botijão P13 (13 kg)",
+    badge: "Uso Residencial · Cozinha",
     description:
-      "O clássico botijão azul de 13 kg para residências em Lages. Entregue lacrado, com peso exato e verificação segura no momento da instalação.",
+      "Botijão de gás GLP de 13 kg ideal para fogões e fornos residenciais. Entregue lacrado de fábrica com peso exato.",
     detailedDesc:
-      "Ideal para fogões residenciais, fornos e aquecimento doméstico. Todos os botijões P13 saem do depósito na Rua Sete de Setembro com lacre de fábrica intacto e conferência gratuita de vazamento na entrega.",
-    image: gasBotijaoP13Cozinha,
+      "Botijão de gás GLP de 13 kg para uso doméstico em fogões e fornos residenciais. Entregue lacrado de fábrica com peso completo e opção com ou sem casco para troca.",
+    image: botijaoP13Produto,
+    priceRefill: 125,
+    priceWithoutShell: 350,
   },
   {
     id: "p45",
-    name: "Cilindro P45 (Comercial & Condomínios)",
-    badge: "45 kg · Alta Demanda",
+    semCascoId: "p45-sem-casco",
+    name: "Cilindro P45 (45 kg)",
+    badge: "Uso Comercial & Condomínios",
     description:
-      "Abastecimento contínuo de cilindros P45 para restaurantes, padarias, lanchonetes, hotéis e centrais de gás de condomínios em Lages/SC.",
+      "Cilindro de gás GLP de 45 kg desenvolvido para restaurantes, padarias, lanchonetes, comércios e centrais de condomínios.",
     detailedDesc:
-      "Solução robusta para cozinhas industriais e estabelecimentos comerciais de Lages que não podem parar. Entrega programada ou emergencial com manuseio seguro até a central de gás.",
-    image: gasCilindroP45Comercial,
-  },
-  {
-    id: "p20",
-    name: "Gás P20 (Empilhadeiras)",
-    badge: "20 kg · Industrial & Logística",
-    description:
-      "Cilindro P20 de 20 kg desenvolvido especialmente para empilhadeiras a gás GLP em depósitos, mercados, indústrias e centros logísticos de Lages/SC.",
-    detailedDesc:
-      "Fornecimento ágil de Gás P20 para empilhadeiras em toda a cidade de Lages e região. Cilindros revisados, lacrados e preparados para uso na posição horizontal, garantindo autonomia e desempenho contínuo na sua operação.",
-    image: gasCilindroP20Empilhadeira,
-  },
-  {
-    id: "seguranca",
-    name: "Instalação & Conferência de Segurança",
-    badge: "Padrão INMETRO",
-    description:
-      "Auxiliamos na troca do botijão, conferimos a validade do regulador e da mangueira e realizamos o teste de estanqueidade com segurança.",
-    detailedDesc:
-      "Sua família protegida em primeiro lugar. Nossos entregadores verificam o encaixe correto da válvula, orientam sobre a validade de 5 anos do regulador NBR 8473 e garantem uma chama azul estável e econômica.",
-    image: gasSegurancaInstalacao,
+      "Cilindro de gás GLP de 45 kg de alta capacidade para cozinhas industriais, comércios e centrais de condomínios. Disponível na modalidade recarga (com casco) ou completo (sem casco).",
+    image: cilindroP45Produto,
+    priceRefill: 450,
+    priceWithoutShell: 1250,
   },
 ];
 
@@ -150,7 +134,7 @@ export const SAFETY_TIPS: SafetyTip[] = [
     id: "s1",
     step: "01",
     title: "Confira o Lacre de Fábrica",
-    desc: "Todo botijão P13 ou P45 entregue pela Gás da 7 chega com lacre de segurança intacto e rótulo informativo com instruções claras.",
+    desc: "Todo botijão P13 ou cilindro P45 entregue pela Gás da 7 chega com lacre de segurança intacto e rótulo informativo com instruções claras.",
   },
   {
     id: "s2",

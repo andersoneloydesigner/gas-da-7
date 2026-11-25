@@ -27,6 +27,8 @@ import {
 
 // Subcomponents & Pages
 import Mascot3DHero from "./components/Mascot3DHero";
+import HeroGeoPattern from "./components/HeroGeoPattern";
+import TeleportSmokePuff from "./components/TeleportSmokePuff";
 import ServicesShowcase from "./components/ServicesShowcase";
 import ContactForm from "./components/ContactForm";
 import OfficialPagesModal from "./components/OfficialPagesModal";
@@ -479,7 +481,8 @@ function HomeLanding() {
           id="inicio"
           className="bg-[#121521] border-b-4 border-[#00B8F4] rounded-b-[2.5rem] md:rounded-b-[4rem] relative z-30 min-h-[680px] md:min-h-[740px] pt-24 md:pt-28 pb-10 flex items-center"
         >
-          <div className="max-w-7xl mx-auto px-6 py-4 md:py-8 relative w-full grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-4 items-center">
+          <HeroGeoPattern />
+          <div className="max-w-7xl mx-auto px-6 py-4 md:py-8 relative z-10 w-full grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-4 items-center">
             {/* LEFT COLUMN: Gas Delivery in Lages/SC */}
             <motion.div
               initial={{ opacity: 0, x: -24 }}
@@ -497,7 +500,7 @@ function HomeLanding() {
               </h1>
 
               <p className="text-sm sm:text-base md:text-lg text-white/85 max-w-xl leading-relaxed font-medium">
-                Na <strong className="text-[#00B8F4]">Gás da 7</strong>, o seu Disk Gás chega rápido em toda a cidade de Lages e região. Entregamos botijões P13, P20 e P45 lacrados e com conferência segura de segunda a domingo — peça pelo WhatsApp ou telefone fixo.
+                Na <strong className="text-[#00B8F4]">Gás da 7</strong>, o seu Disk Gás chega rápido em toda a cidade de Lages e região. Entregamos botijões P13 e cilindros P45 lacrados e com conferência segura de segunda a domingo — peça pelo site, WhatsApp ou telefone fixo.
               </p>
 
               {/* Action CTAs */}
@@ -538,7 +541,7 @@ function HomeLanding() {
           <div className="max-w-7xl mx-auto px-6">
             <div className="w-full max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 justify-center">
               {[
-                { value: "P13 · P20 · P45", label: "Botijões e Cilindros GLP" },
+                { value: "P13 · P45", label: "Botijões e Cilindros GLP" },
                 {
                   value: "08h às 20h",
                   label: openStatus.label,
@@ -680,17 +683,36 @@ function HomeLanding() {
         <Section3DWrapper sectionId="servicos" sectionColor="#FFF9F5">
         <section id="servicos" className="py-20 bg-[#FFF9F5] border-b border-[#FFE1CC]">
           <div className="max-w-7xl mx-auto px-6 space-y-12">
-            <motion.div {...headerRevealProps} className="text-center max-w-3xl mx-auto space-y-3">
-              <p className="text-xs uppercase tracking-widest text-[#F26513] font-extrabold">
-                Disk Gás · Botijões & Tele-Entrega em Lages
-              </p>
-              <h2 className="text-2xl md:text-4xl font-extrabold text-[#121521] tracking-tight [text-wrap:balance]">
-                Soluções em Gás para Sua <span className="text-[#F26513]">Casa ou Empresa</span>
-              </h2>
-              <p className="text-xs md:text-sm text-[#33394D] leading-relaxed max-w-2xl mx-auto font-medium">
-                Do botijão P13 residencial aos cilindros comerciais P20 e P45, nosso Disk Gás atende toda a cidade de Lages/SC e região com entrega rápida, lacre original e conferência de segurança.
-              </p>
-            </motion.div>
+            <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-center md:justify-start gap-4 md:gap-8">
+              {/* Left-side landing dock for the Hero 3D botijão teleport */}
+              <div
+                id="mascot-servicos-anchor"
+                aria-hidden="true"
+                className="relative w-[150px] h-[175px] sm:w-[170px] sm:h-[195px] md:w-[205px] md:h-[230px] shrink-0 flex items-end justify-center"
+              >
+                <TeleportSmokePuff zone="servicos" />
+                <div
+                  id="mascot-servicos-shadow"
+                  className="w-[62%] h-5 rounded-full bg-[#121521]/20 blur-md mb-2 transition-opacity duration-200"
+                  style={{ opacity: 0 }}
+                />
+              </div>
+
+              <motion.div
+                {...headerRevealProps}
+                className="text-center md:text-left max-w-2xl space-y-3"
+              >
+                <p className="text-xs uppercase tracking-widest text-[#F26513] font-extrabold">
+                  Disk Gás · Botijões & Tele-Entrega em Lages
+                </p>
+                <h2 className="text-2xl md:text-4xl font-extrabold text-[#121521] tracking-tight [text-wrap:balance]">
+                  Soluções em Gás para Sua <span className="text-[#F26513]">Casa ou Empresa</span>
+                </h2>
+                <p className="text-xs md:text-sm text-[#33394D] leading-relaxed font-medium">
+                  Confira nossos produtos com entrega rápida em toda a cidade de Lages/SC: botijão P13 residencial e cilindro P45 comercial, com opção de recarga ou completo sem casco.
+                </p>
+              </motion.div>
+            </div>
 
             <ServicesShowcase onSelectService={(serviceId) => handleGoToOrderForm(serviceId)} />
           </div>
@@ -700,7 +722,8 @@ function HomeLanding() {
         {/* 5. Diferenciais Section - Vibrant Orange Cards */}
         <Section3DWrapper sectionId="diferenciais" sectionColor="#FFFFFF">
         <section id="diferenciais" className="py-20 bg-white border-b border-[#FFE1CC] relative overflow-hidden">
-          <div className="max-w-7xl mx-auto px-6 relative space-y-12">
+          <HeroGeoPattern variant="light" />
+          <div className="max-w-7xl mx-auto px-6 relative z-10 space-y-12">
             <motion.div {...headerRevealProps} className="text-center max-w-3xl mx-auto space-y-3">
               <p className="text-xs uppercase tracking-widest text-[#F26513] font-extrabold">
                 Por Que Pedir com a Gás da 7
@@ -788,81 +811,22 @@ function HomeLanding() {
         {/* 7. Contato & Pedido via WhatsApp Section */}
         <Section3DWrapper sectionId="contato" sectionColor="#FFFFFF">
         <section id="contato" className="py-20 bg-white border-b border-[#FFE1CC]">
-          <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-            {/* Left Side */}
-            <motion.div
-              initial={{ opacity: 0, x: -24 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, amount: 0.2, margin: "0px 0px -40px 0px" }}
-              transition={{ duration: 0.78, ease: PIKA_EASE }}
-              className="lg:col-span-5 text-left space-y-6 will-change-transform"
-            >
-              <div className="space-y-4">
-                <p className="text-xs uppercase tracking-widest text-[#F26513] font-extrabold">
-                  Disk Gás em Lages · Atendimento em Toda a Cidade
-                </p>
-                <h2 className="text-2xl md:text-4xl font-extrabold text-[#121521] tracking-tight leading-tight [text-wrap:balance]">
-                  Peça Seu Gás em Lages Sem <span className="text-[#F26513]">Sair de Casa</span>
-                </h2>
-                <p className="text-xs md:text-sm text-[#33394D] leading-relaxed font-medium">
-                  Preencha os dados ao lado para solicitar o Disk Gás em qualquer bairro de Lages diretamente pelo nosso WhatsApp, ou ligue para nossa central no telefone fixo.
-                </p>
-              </div>
-
-              <div className="space-y-3 pt-2 border-t border-[#FFE1CC]">
-                {[
-                  {
-                    title: `WhatsApp ${APP_DETAILS.phoneWhatsapp}`,
-                    desc: "Canal mais rápido para pedir seu P13, P20 ou P45 em Lages.",
-                    href: `https://api.whatsapp.com/send?phone=${APP_DETAILS.phoneWhatsappRaw}&text=${encodeURIComponent("Olá Gás da 7! Gostaria de pedir um botijão de gás em Lages/SC.")}`,
-                    external: true,
-                  },
-                  {
-                    title: `Telefone Fixo ${APP_DETAILS.phoneFixed}`,
-                    desc: "Disk Gás para pedir sua entrega por ligação e atendimento direto no depósito da Rua Sete de Setembro, 1749.",
-                    href: `tel:+${APP_DETAILS.phoneFixedRaw}`,
-                    external: false,
-                  },
-                  {
-                    title: "Pagamento na Entrega",
-                    desc: "Aceitamos Pix, cartões de débito, crédito e dinheiro na porta da sua casa.",
-                  },
-                ].map((item, idx) => (
-                  <motion.div
-                    key={item.title}
-                    initial={{ opacity: 0, y: 16 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.2 }}
-                    transition={{ duration: 0.68, delay: 0.08 + idx * 0.08, ease: PIKA_EASE }}
-                    className="flex items-start gap-3"
-                  >
-                    <span className="mt-0.5 p-1.5 rounded-lg bg-[#FFF5EE] text-[#F26513] shrink-0">
-                      <Check className="w-4 h-4 stroke-[3]" />
-                    </span>
-                    <div>
-                      {item.href ? (
-                        <a
-                          href={item.href}
-                          target={item.external ? "_blank" : undefined}
-                          rel={item.external ? "noopener noreferrer" : undefined}
-                          className="inline-block text-xs font-extrabold text-[#121521] hover:text-[#F26513] hover:underline uppercase tracking-wide transition-colors"
-                        >
-                          {item.title}
-                        </a>
-                      ) : (
-                        <h4 className="text-xs font-extrabold text-[#121521] uppercase tracking-wide">
-                          {item.title}
-                        </h4>
-                      )}
-                      <p className="text-xs text-[#33394D] leading-relaxed">{item.desc}</p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+          <div className="max-w-7xl mx-auto px-6 space-y-10">
+            {/* Centered Header Above Form */}
+            <motion.div {...headerRevealProps} className="text-center max-w-3xl mx-auto space-y-3">
+              <p className="text-xs uppercase tracking-widest text-[#F26513] font-extrabold">
+                Disk Gás em Lages · Atendimento em Toda a Cidade
+              </p>
+              <h2 className="text-2xl md:text-4xl font-extrabold text-[#121521] tracking-tight leading-tight [text-wrap:balance]">
+                Peça Seu Gás em Lages Sem <span className="text-[#F26513]">Sair de Casa</span>
+              </h2>
+              <p className="text-xs md:text-sm text-[#33394D] leading-relaxed font-medium max-w-2xl mx-auto">
+                Preencha os dados abaixo para solicitar o Disk Gás em qualquer bairro de Lages diretamente pelo nosso WhatsApp, ou ligue para nossa central no telefone fixo.
+              </p>
             </motion.div>
 
-            {/* Right Side */}
-            <div className="lg:col-span-7 w-full">
+            {/* Expanded Full-Width Order Form */}
+            <div className="w-full max-w-6xl mx-auto">
               <ContactForm
                 selectedProduct={selectedFormProduct}
                 selectionNonce={selectionNonce}
@@ -1087,16 +1051,6 @@ function HomeLanding() {
                 className="block text-white/80 hover:text-[#00B8F4] hover:underline transition-colors"
               >
                 Botijão P13 Residencial
-              </a>
-              <a
-                href="#contato"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleGoToOrderForm("p20");
-                }}
-                className="block text-white/80 hover:text-[#00B8F4] hover:underline transition-colors"
-              >
-                Gás P20 Empilhadeira
               </a>
               <a
                 href="#contato"
